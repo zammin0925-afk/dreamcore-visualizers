@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시간의 흐름 - 24시간 감성 힐링 풍경 (Healing Time Sanctuary)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: #fff;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Ambient Lighting Vignette */
+    #ambient-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.4);
+      transition: background 1.5s ease;
+    }
+
+    /* Top Left Minimal Clock & Quote */
+    #clock-widget {
+      position: absolute;
+      top: 26px;
+      left: 32px;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    #time-display {
+      font-size: 52px;
+      font-weight: 200;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      text-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.8);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #date-display {
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: 6px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    }
+
+    #mood-greeting {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.95);
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 20, 32, 0.45);
+      padding: 6px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+
+    #healing-quote {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.5px;
+      font-style: italic;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+      transition: opacity 0.8s ease;
+    }
+
+    /* Breathing Relaxation Circle Widget */
+    #breathe-widget {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 8;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #breathe-widget.active {
+      opacity: 1;
+    }
+
+    .breathe-circle-outer {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .breathe-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.3), inset 0 0 25px rgba(56, 189, 248, 0.15);
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1), border-color 1s ease, box-shadow 1s ease;
+    }
+
+    .breathe-core {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(147, 197, 253, 0.35) 0%, rgba(56, 189, 248, 0.05) 70%, transparent 100%);
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #breathe-text {
+      font-size: 16px;
+      font-weight: 300;
+      letter-spacing: 1.5px;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      margin-top: 18px;
+    }
+
+    /* Top Right Floating Navigation Tools */
+    #top-right-tools {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-tool-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(18, 22, 36, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 17px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .icon-tool-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+      transform: scale(1.08);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .icon-tool-btn.active {
+      background: rgba(56, 189, 248, 0.28);
+      border-color: rgba(56, 189, 248, 0.65);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Floating Bottom Control Panel */
+    #ui-container {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(94%, 920px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-panel {
+      background: rgba(15, 20, 32, 0.58);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 20px;
+      padding: 13px 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    /* 24-Hour Scrubber Row */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .time-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      white-space: nowrap;
+      min-width: 72px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .slider-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="range"]#timeSlider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, 
+        #0f1426 0%, 
+        #2a1b42 16%, 
+        #c94e77 24%, 
+        #f8a562 31%, 
+        #79c0f8 46%, 
+        #49a5ed 60%, 
+        #f97940 76%, 
+        #63255c 86%, 
+        #0f1426 100%);
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.6);
+    }
+
+    input[type="range"]#timeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: grab;
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.95), 0 2px 6px rgba(0,0,0,0.6);
+      border: 2px solid #38bdf8;
+      transition: transform 0.15s ease;
+    }
+
+    input[type="range"]#timeSlider::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    input[type="range"]#timeSlider::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.1);
+      background: #38bdf8;
+    }
+
+    /* Controls Rows */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 5px;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.35), rgba(129, 140, 248, 0.35));
+      border-color: rgba(56, 189, 248, 0.65);
+      color: #ffffff;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.32);
+    }
+
+    .pill-btn.special-btn {
+      background: rgba(251, 146, 60, 0.16);
+      border-color: rgba(251, 146, 60, 0.35);
+      color: #fed7aa;
+    }
+
+    .pill-btn.special-btn.active {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: rgba(34, 197, 94, 0.6);
+      color: #86efac;
+    }
+
+    .volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 55px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+    }
+
+    /* Zen Mode State */
+    body.zen-mode #ui-container {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 35px);
+    }
+
+    body.zen-mode #clock-widget {
+      opacity: 0.22;
+      transform: translateY(-6px);
+    }
+
+    body.zen-mode #clock-widget:hover {
+      opacity: 0.95;
+    }
+
+    #zen-tip {
+      position: absolute;
+      bottom: 10px;
+      right: 18px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.38);
+      pointer-events: none;
+      z-index: 5;
+      letter-spacing: 0.4px;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 85px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #e0f2fe;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Canvas for Sky, Stars, Aurora, Celestial Bodies, Mountains, Lake Reflection, Cabin -->
+  <div id="canvas-container">
+    <canvas id="skyCanvas"></canvas>
+  </div>
+
+  <div id="ambient-overlay"></div>
+
+  <!-- Realtime Minimal Clock & Healing Quote Widget -->
+  <div id="clock-widget">
+    <div id="time-display">00:00:00</div>
+    <div id="date-display">2026년 00월 00일 (요일)</div>
+    <div id="mood-greeting">
+      <span id="greeting-icon">✨</span>
+      <span id="greeting-text">평온한 쉼의 시간</span>
+    </div>
+    <div id="healing-quote">"숨을 깊게 들이쉬고, 편안하게 마음을 내려놓으세요."</div>
+  </div>
+
+  <!-- Mindful Breathing Relaxation Guide Widget -->
+  <div id="breathe-widget">
+    <div class="breathe-circle-outer">
+      <div class="breathe-ring" id="breatheRing"></div>
+      <div class="breathe-core" id="breatheCore"></div>
+    </div>
+    <div id="breathe-text">천천히 들이마시기 (4초)</div>
+  </div>
+
+  <!-- Top Right Tools (Sound, Breathing, Zen Mode, Fullscreen) -->
+  <div id="top-right-tools">
+    <button class="icon-tool-btn" id="btnBreatheToggle" title="힐링 호흡 가이드 켜기/끄기 (단축키: B)">
+      🧘
+    </button>
+    <button class="icon-tool-btn" id="btnSoundMaster" title="힐링 사운드스케이프 온/오프 (Space 또는 클릭)">
+      <span id="sound-icon">🔇</span>
+    </button>
+    <button class="icon-tool-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
+      👁️
+    </button>
+    <button class="icon-tool-btn" id="btnFullscreen" title="전체화면 (단축키: F)">
+      ⛶
+    </button>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">화면 안내</div>
+
+  <!-- Bottom Floating Control Center -->
+  <div id="ui-container">
+    <div class="glass-panel">
+      <!-- 24-Hour Scrubber Slider -->
+      <div class="slider-row">
+        <span class="time-label" id="sliderTimeLabel">시간: 12:00</span>
+        <div class="slider-wrapper">
+          <input type="range" id="timeSlider" min="0" max="1440" step="1" value="720">
+        </div>
+        <button class="pill-btn special-btn active" id="btnLiveSync" title="내 컴퓨터의 실제 시간과 자동 동기화">
+          <span style="font-size: 10px;">🟢</span> 실제 시간
+        </button>
+      </div>
+
+      <!-- Controls Row: Presets, Weather, Speed, Sound Mix -->
+      <div class="controls-row">
+        <!-- Preset Time Buttons -->
+        <div class="btn-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;">테마:</span>
+          <button class="pill-btn" data-time="340">🌅 여명 (05:40)</button>
+          <button class="pill-btn" data-time="720">☀️ 한낮 (12:00)</button>
+          <button class="pill-btn" data-time="1100">🌇 노을 (18:20)</button>
+          <button class="pill-btn" data-time="1260">🌌 황혼 (21:00)</button>
+          <button class="pill-btn" data-time="120">✨ 깊은 밤 (02:00)</button>
+        </div>
+
+        <!-- Weather / Natural Scenery -->
+        <div class="btn-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;">날씨:</span>
+          <button class="pill-btn active" id="btnWeatherClear">☀️ 맑음</button>
+          <button class="pill-btn" id="btnWeatherRain">🌧️ 촉촉한 비</button>
+          <button class="pill-btn" id="btnWeatherSnow">❄️ 포근한 눈</button>
+          <button class="pill-btn" id="btnWeatherMeteor">🌠 별똥별</button>
+        </div>
+
+        <!-- Timelapse Speed -->
+        <div class="btn-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;">흐름:</span>
+          <button class="pill-btn active" id="btnSpeed1x">1x</button>
+          <button class="pill-btn" id="btnSpeed30x">30x</button>
+          <button class="pill-btn" id="btnSpeed120x">120x</button>
+          <button class="pill-btn" id="btnSpeedPause">⏸️</button>
+        </div>
+
+        <!-- Cozy Cabin Light Toggle -->
+        <div class="btn-group">
+          <button class="pill-btn active" id="btnToggleCabin" title="호숫가 오두막의 따스한 등불">
+            🏡 오두막 등불
+          </button>
+        </div>
+
+        <!-- Sound Mixer -->
+        <div class="btn-group" style="align-items: center; gap: 6px;">
+          <button class="pill-btn" id="btnToggleChime" title="바람결에 울리는 맑은 윈드차임 풍경 소리">🔔 풍경 소리</button>
+          <button class="pill-btn" id="btnToggleMusic" title="몽환적인 펜타토닉 앰비언트 패드">🎹 패드</button>
+          <button class="pill-btn" id="btnToggleNature" title="바람/풀벌레/장작 자연음">🍃 자연음</button>
+          <input type="range" class="volume-slider" id="masterVolume" min="0" max="1" step="0.05" value="0.5" title="마스터 볼륨">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="zen-tip">단축키: [H] UI 숨김 · [B] 호흡 가이드 · [F] 전체화면 · [Space] 사운드 · [화면 클릭] 물결 생성</div>
+
+  <script>
+    /* ==========================================================================
+       1. Global State & Time Management
+       ========================================================================== */
+    const state = {
+      isLiveSync: true,
+      minuteOfDay: 720,
+      timeMultiplier: 1.0,
+      isPaused: false,
+      weather: 'clear', // 'clear', 'rain', 'snow', 'meteor'
+      zenMode: false,
+      breatheActive: false,
+      cabinLight: true,
+      audioActive: false,
+      musicEnabled: true,
+      natureEnabled: true,
+      chimeEnabled: true,
+      masterGain: 0.5,
+      lastTimestamp: performance.now(),
+      stars: [],
+      shootingStars: [],
+      fireflies: [],
+      petals: [],
+      snowflakes: [],
+      rainDrops: [],
+      waterRipples: [],
+      stardust: [],
+      birds: [],
+      clouds: []
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById('skyCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const timeSlider = document.getElementById('timeSlider');
+    const sliderTimeLabel = document.getElementById('sliderTimeLabel');
+    const btnLiveSync = document.getElementById('btnLiveSync');
+    const timeDisplay = document.getElementById('time-display');
+    const dateDisplay = document.getElementById('date-display');
+    const moodGreeting = document.getElementById('mood-greeting');
+    const greetingIcon = document.getElementById('greeting-icon');
+    const greetingText = document.getElementById('greeting-text');
+    const healingQuote = document.getElementById('healing-quote');
+    const toast = document.getElementById('toast');
+    const btnSoundMaster = document.getElementById('btnSoundMaster');
+    const soundIcon = document.getElementById('sound-icon');
+    const btnZenMode = document.getElementById('btnZenMode');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnBreatheToggle = document.getElementById('btnBreatheToggle');
+    const breatheWidget = document.getElementById('breathe-widget');
+    const breatheRing = document.getElementById('breatheRing');
+    const breatheCore = document.getElementById('breatheCore');
+    const breatheText = document.getElementById('breathe-text');
+    const btnToggleCabin = document.getElementById('btnToggleCabin');
+    const btnToggleChime = document.getElementById('btnToggleChime');
+    const btnToggleMusic = document.getElementById('btnToggleMusic');
+    const btnToggleNature = document.getElementById('btnToggleNature');
+    const masterVolume = document.getElementById('masterVolume');
+
+    const healingQuotesList = [
+      "숨을 깊게 들이쉬고, 편안하게 마음을 내려놓으세요.",
+      "오늘 하루도 참 고생 많으셨어요.",
+      "모든 것은 제자리를 찾아 자연스럽게 흘러갑니다.",
+      "잠시 멈추어 서서, 지금 이 순간의 평온을 느껴보세요.",
+      "어둠이 깊을수록, 밤하늘의 별은 더 맑고 빛납니다.",
+      "따뜻한 온기가 마음 가득 깃들기를 바랍니다.",
+      "마음의 짐은 잠시 내려놓고, 편히 쉬어가세요."
+    ];
+    let quoteIndex = 0;
+    setInterval(() => {
+      quoteIndex = (quoteIndex + 1) % healingQuotesList.length;
+      healingQuote.style.opacity = 0;
+      setTimeout(() => {
+        healingQuote.innerText = `"${healingQuotesList[quoteIndex]}"`;
+        healingQuote.style.opacity = 1;
+      }, 700);
+    }, 18000);
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ==========================================================================
+       2. Canvas Sizing & DPR Configuration
+       ========================================================================== */
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      initStars();
+      initClouds();
+      initFireflies();
+      initPetals();
+      initRain();
+      initSnow();
+      initBirds();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /* ==========================================================================
+       3. 24-Hour Atmospheric Palette & Sky Gradient Interpolation
+       ========================================================================== */
+    const skyKeyframes = [
+      {
+        min: 0, // 00:00 Midnight
+        skyTop: [4, 7, 24],
+        skyMid: [8, 16, 42],
+        skyBottom: [16, 28, 62],
+        horizonGlow: [26, 40, 80, 0.28],
+        sunAlpha: 0,
+        moonAlpha: 1.0,
+        starAlpha: 1.0,
+        auroraAlpha: 0.85,
+        lightHaze: [10, 16, 38],
+        waterTop: [8, 14, 36],
+        waterBottom: [3, 5, 16],
+        greeting: { icon: "🌙", text: "고요한 자정, 편안한 쉼을 누리세요" }
+      },
+      {
+        min: 240, // 04:00 Pre-dawn
+        skyTop: [5, 8, 28],
+        skyMid: [14, 18, 48],
+        skyBottom: [36, 26, 62],
+        horizonGlow: [55, 38, 78, 0.35],
+        sunAlpha: 0,
+        moonAlpha: 0.85,
+        starAlpha: 0.9,
+        auroraAlpha: 0.65,
+        lightHaze: [18, 18, 46],
+        waterTop: [12, 16, 40],
+        waterBottom: [4, 7, 20],
+        greeting: { icon: "✨", text: "동트기 전, 가장 맑고 청아한 시간" }
+      },
+      {
+        min: 330, // 05:30 First Light (여명)
+        skyTop: [22, 24, 62],
+        skyMid: [68, 42, 92],
+        skyBottom: [186, 90, 106],
+        horizonGlow: [248, 146, 112, 0.8],
+        sunAlpha: 0.35,
+        moonAlpha: 0.4,
+        starAlpha: 0.35,
+        auroraAlpha: 0.1,
+        lightHaze: [130, 75, 98],
+        waterTop: [36, 30, 68],
+        waterBottom: [14, 14, 34],
+        greeting: { icon: "🌅", text: "은은한 여명이 밝아오는 아침입니다" }
+      },
+      {
+        min: 400, // 06:40 Golden Sunrise
+        skyTop: [50, 75, 130],
+        skyMid: [142, 120, 165],
+        skyBottom: [248, 164, 110],
+        horizonGlow: [255, 210, 130, 0.95],
+        sunAlpha: 0.92,
+        moonAlpha: 0.0,
+        starAlpha: 0.05,
+        auroraAlpha: 0,
+        lightHaze: [220, 160, 130],
+        waterTop: [60, 80, 130],
+        waterBottom: [25, 40, 75],
+        greeting: { icon: "☀️", text: "따스한 햇살과 함께 시작하는 상쾌한 아침" }
+      },
+      {
+        min: 540, // 09:00 Serene Morning
+        skyTop: [48, 125, 218],
+        skyMid: [112, 184, 246],
+        skyBottom: [195, 228, 255],
+        horizonGlow: [255, 250, 235, 0.85],
+        sunAlpha: 1.0,
+        moonAlpha: 0.0,
+        starAlpha: 0,
+        auroraAlpha: 0,
+        lightHaze: [180, 215, 245],
+        waterTop: [55, 135, 210],
+        waterBottom: [20, 70, 130],
+        greeting: { icon: "🌿", text: "맑고 깨끗한 아침 햇살이 가득합니다" }
+      },
+      {
+        min: 780, // 13:00 Vivid Midday
+        skyTop: [36, 118, 215],
+        skyMid: [92, 178, 250],
+        skyBottom: [180, 225, 255],
+        horizonGlow: [255, 255, 255, 0.9],
+        sunAlpha: 1.0,
+        moonAlpha: 0.0,
+        starAlpha: 0,
+        auroraAlpha: 0,
+        lightHaze: [170, 210, 245],
+        waterTop: [45, 130, 215],
+        waterBottom: [15, 65, 125],
+        greeting: { icon: "☀️", text: "푸른 하늘과 눈부신 한낮의 여유" }
+      },
+      {
+        min: 1020, // 17:00 Late Afternoon
+        skyTop: [42, 92, 172],
+        skyMid: [118, 154, 210],
+        skyBottom: [236, 184, 142],
+        horizonGlow: [255, 210, 150, 0.85],
+        sunAlpha: 1.0,
+        moonAlpha: 0.05,
+        starAlpha: 0,
+        auroraAlpha: 0,
+        lightHaze: [210, 165, 150],
+        waterTop: [50, 100, 165],
+        waterBottom: [20, 50, 95],
+        greeting: { icon: "🌾", text: "평온하고 부드러운 늦은 오후의 볕" }
+      },
+      {
+        min: 1110, // 18:30 Sunset / Golden Hour
+        skyTop: [38, 24, 75],
+        skyMid: [145, 58, 92],
+        skyBottom: [248, 112, 68],
+        horizonGlow: [255, 180, 68, 0.98],
+        sunAlpha: 0.96,
+        moonAlpha: 0.35,
+        starAlpha: 0.1,
+        auroraAlpha: 0,
+        lightHaze: [215, 100, 80],
+        waterTop: [70, 45, 85],
+        waterBottom: [30, 20, 45],
+        greeting: { icon: "🌇", text: "붉게 물드는 황금빛 저녁 노을" }
+      },
+      {
+        min: 1190, // 19:50 Twilight / Dusk (황혼)
+        skyTop: [18, 15, 46],
+        skyMid: [56, 26, 70],
+        skyBottom: [140, 52, 80],
+        horizonGlow: [196, 94, 108, 0.65],
+        sunAlpha: 0.12,
+        moonAlpha: 0.75,
+        starAlpha: 0.65,
+        auroraAlpha: 0.25,
+        lightHaze: [85, 40, 70],
+        waterTop: [28, 22, 54],
+        waterBottom: [10, 10, 26],
+        greeting: { icon: "🌆", text: "은은한 보랏빛 황혼이 내리는 저녁" }
+      },
+      {
+        min: 1300, // 21:40 Nightfall
+        skyTop: [5, 9, 26],
+        skyMid: [11, 20, 52],
+        skyBottom: [20, 34, 75],
+        horizonGlow: [34, 50, 96, 0.45],
+        sunAlpha: 0,
+        moonAlpha: 1.0,
+        starAlpha: 0.95,
+        auroraAlpha: 0.75,
+        lightHaze: [14, 22, 50],
+        waterTop: [10, 18, 44],
+        waterBottom: [4, 8, 20],
+        greeting: { icon: "✨", text: "별빛이 쏟아지는 아늑하고 고요한 밤" }
+      },
+      {
+        min: 1440, // 24:00 Loops back
+        skyTop: [4, 7, 24],
+        skyMid: [8, 16, 42],
+        skyBottom: [16, 28, 62],
+        horizonGlow: [26, 40, 80, 0.28],
+        sunAlpha: 0,
+        moonAlpha: 1.0,
+        starAlpha: 1.0,
+        auroraAlpha: 0.85,
+        lightHaze: [10, 16, 38],
+        waterTop: [8, 14, 36],
+        waterBottom: [3, 5, 16],
+        greeting: { icon: "🌙", text: "고요한 자정, 편안한 쉼을 누리세요" }
+      }
+    ];
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function lerpColor(c1, c2, t) {
+      return [
+        Math.round(lerp(c1[0], c2[0], t)),
+        Math.round(lerp(c1[1], c2[1], t)),
+        Math.round(lerp(c1[2], c2[2], t))
+      ];
+    }
+
+    function getAtmosphere(minute) {
+      const m = ((minute % 1440) + 1440) % 1440;
+      let idx = 0;
+      for (let i = 0; i < skyKeyframes.length - 1; i++) {
+        if (m >= skyKeyframes[i].min && m <= skyKeyframes[i + 1].min) {
+          idx = i;
+          break;
+        }
+      }
+
+      const k1 = skyKeyframes[idx];
+      const k2 = skyKeyframes[idx + 1];
+      const progress = (m - k1.min) / (k2.min - k1.min);
+      const t = (1 - Math.cos(progress * Math.PI)) / 2;
+
+      return {
+        skyTop: lerpColor(k1.skyTop, k2.skyTop, t),
+        skyMid: lerpColor(k1.skyMid, k2.skyMid, t),
+        skyBottom: lerpColor(k1.skyBottom, k2.skyBottom, t),
+        horizonGlow: [
+          lerp(k1.horizonGlow[0], k2.horizonGlow[0], t),
+          lerp(k1.horizonGlow[1], k2.horizonGlow[1], t),
+          lerp(k1.horizonGlow[2], k2.horizonGlow[2], t),
+          lerp(k1.horizonGlow[3], k2.horizonGlow[3], t)
+        ],
+        sunAlpha: lerp(k1.sunAlpha, k2.sunAlpha, t),
+        moonAlpha: lerp(k1.moonAlpha, k2.moonAlpha, t),
+        starAlpha: lerp(k1.starAlpha, k2.starAlpha, t),
+        auroraAlpha: lerp(k1.auroraAlpha, k2.auroraAlpha, t),
+        lightHaze: lerpColor(k1.lightHaze, k2.lightHaze, t),
+        waterTop: lerpColor(k1.waterTop, k2.waterTop, t),
+        waterBottom: lerpColor(k1.waterBottom, k2.waterBottom, t),
+        greeting: progress < 0.5 ? k1.greeting : k2.greeting
+      };
+    }
+
+    /* ==========================================================================
+       4. Visual Elements Initializers (Stars, Clouds, Wildlife, Particles)
+       ========================================================================== */
+    function initStars() {
+      state.stars = [];
+      const count = Math.min(Math.floor((width * height) / 4200), 320);
+      for (let i = 0; i < count; i++) {
+        state.stars.push({
+          x: Math.random() * width,
+          y: Math.random() * (height * 0.62),
+          size: Math.random() * 1.6 + 0.4,
+          twinkleSpeed: Math.random() * 0.03 + 0.012,
+          phase: Math.random() * Math.PI * 2,
+          color: Math.random() > 0.8 ? 'rgba(215, 238, 255, ' : (Math.random() > 0.85 ? 'rgba(255, 240, 215, ' : 'rgba(255, 255, 255, ')
+        });
+      }
+    }
+
+    function addShootingStar() {
+      const startX = Math.random() * width * 0.85 + width * 0.05;
+      const startY = Math.random() * height * 0.3;
+      const angle = Math.PI / 4 + (Math.random() - 0.5) * 0.35;
+      const speed = Math.random() * 9 + 13;
+      const length = Math.random() * 90 + 110;
+
+      state.shootingStars.push({
+        x: startX,
+        y: startY,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        length: length,
+        life: 1.0,
+        decay: Math.random() * 0.02 + 0.014,
+        color: Math.random() > 0.5 ? '#b8f3f8' : '#ffffff'
+      });
+    }
+
+    function initClouds() {
+      state.clouds = [];
+      const count = 8;
+      for (let i = 0; i < count; i++) {
+        state.clouds.push({
+          x: Math.random() * width * 1.5 - width * 0.25,
+          y: Math.random() * (height * 0.34) + 25,
+          scale: Math.random() * 0.8 + 0.6,
+          speed: Math.random() * 0.12 + 0.04,
+          opacity: Math.random() * 0.3 + 0.22,
+          puffs: [
+            { ox: 0, oy: 0, r: 42 },
+            { ox: 38, oy: -16, r: 52 },
+            { ox: 80, oy: -12, r: 48 },
+            { ox: 122, oy: 6, r: 38 },
+            { ox: 54, oy: 16, r: 36 }
+          ]
+        });
+      }
+    }
+
+    function initFireflies() {
+      state.fireflies = [];
+      const count = 38;
+      for (let i = 0; i < count; i++) {
+        state.fireflies.push({
+          x: Math.random() * width,
+          y: height * 0.56 + Math.random() * (height * 0.42),
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.4 - 0.08,
+          size: Math.random() * 2.2 + 1.2,
+          glowPhase: Math.random() * Math.PI * 2,
+          glowSpeed: Math.random() * 0.04 + 0.02
+        });
+      }
+    }
+
+    function initPetals() {
+      state.petals = [];
+      const count = 28;
+      for (let i = 0; i < count; i++) {
+        state.petals.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: Math.random() * 0.8 + 0.4,
+          vy: Math.random() * 0.55 + 0.3,
+          size: Math.random() * 4 + 3,
+          angle: Math.random() * Math.PI * 2,
+          va: (Math.random() - 0.5) * 0.03,
+          color: Math.random() > 0.4 ? 'rgba(255, 192, 203, 0.65)' : 'rgba(255, 255, 255, 0.5)'
+        });
+      }
+    }
+
+    function initRain() {
+      state.rainDrops = [];
+      const count = Math.min(Math.floor(width / 3.4), 360);
+      for (let i = 0; i < count; i++) {
+        state.rainDrops.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          speed: Math.random() * 12 + 16,
+          length: Math.random() * 24 + 16,
+          opacity: Math.random() * 0.3 + 0.2
+        });
+      }
+    }
+
+    function initSnow() {
+      state.snowflakes = [];
+      const count = Math.min(Math.floor(width / 4.5), 240);
+      for (let i = 0; i < count; i++) {
+        state.snowflakes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 2.5 + 1.0,
+          speedY: Math.random() * 1.2 + 0.8,
+          speedX: Math.random() * 0.6 - 0.3,
+          swayPhase: Math.random() * Math.PI * 2,
+          swaySpeed: Math.random() * 0.03 + 0.015,
+          alpha: Math.random() * 0.5 + 0.35
+        });
+      }
+    }
+
+    function initBirds() {
+      state.birds = [];
+      // Flocks flying occasionally at dawn or sunset
+      const flockSize = 6;
+      const baseX = -80;
+      const baseY = height * 0.25;
+      for (let i = 0; i < flockSize; i++) {
+        state.birds.push({
+          x: baseX - i * 25 - Math.random() * 15,
+          y: baseY + (i % 2 === 0 ? i * 14 : -i * 12),
+          speed: 1.6 + Math.random() * 0.2,
+          wingPhase: Math.random() * Math.PI * 2,
+          size: 7 + Math.random() * 2
+        });
+      }
+    }
+
+    /* ==========================================================================
+       5. Natural Multi-Layer Terrain, Lakeside Cabin & Pine Trees
+       ========================================================================== */
+    function drawLayeredLandscape(horizonY, atmos, timeNow) {
+      // 1. Far Alpine Mountain Range (Sharper ridges with atmospheric haze)
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.lineTo(0, horizonY - 60);
+
+      const farStep = 6;
+      for (let x = 0; x <= width + farStep; x += farStep) {
+        const nx = x * 0.0016;
+        const peak = Math.sin(nx * 1.3) * 75
+                   + Math.abs(Math.sin(nx * 3.7 + 1.2)) * 45
+                   + Math.sin(nx * 0.7 - 0.5) * 35;
+        ctx.lineTo(x, horizonY - 45 - peak);
+      }
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${Math.round(atmos.skyMid[0] * 0.72 + atmos.lightHaze[0] * 0.28)}, 
+                           ${Math.round(atmos.skyMid[1] * 0.72 + atmos.lightHaze[1] * 0.28)}, 
+                           ${Math.round(atmos.skyMid[2] * 0.72 + atmos.lightHaze[2] * 0.28)}, 0.88)`;
+      ctx.fill();
+
+      // Atmospheric Valley Fog between Far and Mid mountains
+      const fogGrad = ctx.createLinearGradient(0, horizonY - 45, 0, horizonY);
+      fogGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      fogGrad.addColorStop(1, `rgba(${atmos.lightHaze[0]}, ${atmos.lightHaze[1]}, ${atmos.lightHaze[2]}, 0.45)`);
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(0, horizonY - 45, width, 45);
+
+      // 2. Mid Rolling Forested Hills
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.lineTo(0, horizonY - 20);
+
+      const midStep = 8;
+      for (let x = 0; x <= width + midStep; x += midStep) {
+        const nx = x * 0.0031 + 45;
+        const elevation = Math.sin(nx) * 55
+                        + Math.sin(nx * 2.2 + 0.8) * 22
+                        + Math.cos(nx * 0.6) * 20;
+        ctx.lineTo(x, horizonY - 15 - elevation);
+      }
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${Math.round(atmos.skyTop[0] * 0.55 + atmos.lightHaze[0] * 0.2)}, 
+                           ${Math.round(atmos.skyTop[1] * 0.55 + atmos.lightHaze[1] * 0.2)}, 
+                           ${Math.round(atmos.skyTop[2] * 0.55 + atmos.lightHaze[2] * 0.2)}, 0.94)`;
+      ctx.fill();
+
+      // 3. Near Lake Shoreline & Pine Tree Forest Silhouettes
+      ctx.beginPath();
+      ctx.moveTo(0, height);
+      ctx.lineTo(0, horizonY);
+
+      for (let x = 0; x <= width; x += 10) {
+        const nx = x * 0.005;
+        const bump = Math.sin(nx * 1.8) * 16 + Math.cos(nx * 4.2) * 8;
+        ctx.lineTo(x, horizonY - bump);
+      }
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      const nearColor = `rgba(${Math.round(atmos.skyTop[0] * 0.32)}, 
+                             ${Math.round(atmos.skyTop[1] * 0.32)}, 
+                             ${Math.round(atmos.skyTop[2] * 0.36)}, 0.99)`;
+      ctx.fillStyle = nearColor;
+      ctx.fill();
+
+      // Draw Pine Trees along the Shoreline on Left & Right Banks
+      drawPineForest(horizonY, nearColor);
+
+      // 4. Distant Cozy Lakeside Cabin with Warm Glowing Window
+      if (state.cabinLight) {
+        drawCozyLakesideCabin(horizonY, atmos, timeNow);
+      }
+    }
+
+    function drawPineForest(horizonY, color) {
+      ctx.fillStyle = color;
+      const treeConfigs = [
+        // Left bank trees
+        { x: width * 0.04, h: 48, w: 18 },
+        { x: width * 0.07, h: 62, w: 22 },
+        { x: width * 0.10, h: 42, w: 16 },
+        { x: width * 0.13, h: 54, w: 20 },
+        { x: width * 0.16, h: 36, w: 14 },
+        // Right bank trees
+        { x: width * 0.82, h: 44, w: 16 },
+        { x: width * 0.85, h: 58, w: 22 },
+        { x: width * 0.89, h: 68, w: 26 },
+        { x: width * 0.93, h: 50, w: 18 },
+        { x: width * 0.96, h: 40, w: 15 }
+      ];
+
+      treeConfigs.forEach(t => {
+        const baseY = horizonY + 2;
+        ctx.beginPath();
+        ctx.moveTo(t.x, baseY - t.h);
+        ctx.lineTo(t.x - t.w * 0.5, baseY - t.h * 0.45);
+        ctx.lineTo(t.x - t.w * 0.3, baseY - t.h * 0.45);
+        ctx.lineTo(t.x - t.w * 0.65, baseY - t.h * 0.1);
+        ctx.lineTo(t.x - t.w * 0.4, baseY - t.h * 0.1);
+        ctx.lineTo(t.x - t.w * 0.75, baseY);
+        ctx.lineTo(t.x + t.w * 0.75, baseY);
+        ctx.lineTo(t.x + t.w * 0.4, baseY - t.h * 0.1);
+        ctx.lineTo(t.x + t.w * 0.65, baseY - t.h * 0.1);
+        ctx.lineTo(t.x + t.w * 0.3, baseY - t.h * 0.45);
+        ctx.lineTo(t.x + t.w * 0.5, baseY - t.h * 0.45);
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+
+    function drawCozyLakesideCabin(horizonY, atmos, timeNow) {
+      const cx = width * 0.22;
+      const cy = horizonY - 4;
+      const cw = 30;
+      const ch = 20;
+
+      // Cabin Silhouette
+      ctx.fillStyle = `rgb(${Math.round(atmos.skyTop[0] * 0.25)}, ${Math.round(atmos.skyTop[1] * 0.25)}, ${Math.round(atmos.skyTop[2] * 0.28)})`;
+      ctx.beginPath();
+      ctx.rect(cx, cy - ch, cw, ch);
+      ctx.fill();
+
+      // Cabin Gable Roof
+      ctx.beginPath();
+      ctx.moveTo(cx - 5, cy - ch);
+      ctx.lineTo(cx + cw / 2, cy - ch - 12);
+      ctx.lineTo(cx + cw + 5, cy - ch);
+      ctx.closePath();
+      ctx.fill();
+
+      // Chimney & Soft Floating Smoke
+      ctx.fillRect(cx + 6, cy - ch - 14, 5, 8);
+      const smokeCount = 4;
+      for (let s = 0; s < smokeCount; s++) {
+        const t = (timeNow * 0.0012 + s * 0.8) % 3.0;
+        const sy = cy - ch - 16 - t * 16;
+        const sx = cx + 8 + Math.sin(t * 2.5) * 8 + t * 4;
+        const sr = 3 + t * 4;
+        const sa = Math.max(0, (1 - t / 3.0) * 0.25);
+        ctx.fillStyle = `rgba(220, 225, 235, ${sa})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Warm Glowing Cabin Window (Atmospheric Lantern Glow)
+      const isDark = atmos.sunAlpha < 0.6;
+      if (isDark) {
+        const flicker = Math.sin(timeNow * 0.006) * 0.08 + 0.92;
+        const winX = cx + cw * 0.55;
+        const winY = cy - ch * 0.5;
+
+        // Window Aura / Bloom
+        const winGlow = ctx.createRadialGradient(winX, winY, 2, winX, winY, 32);
+        winGlow.addColorStop(0, `rgba(255, 205, 115, ${0.85 * flicker})`);
+        winGlow.addColorStop(0.4, `rgba(251, 146, 60, ${0.35 * flicker})`);
+        winGlow.addColorStop(1, 'rgba(251, 146, 60, 0)');
+
+        ctx.fillStyle = winGlow;
+        ctx.beginPath();
+        ctx.arc(winX, winY, 32, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Window Frame
+        ctx.fillStyle = `rgba(255, 235, 165, ${0.98 * flicker})`;
+        ctx.fillRect(winX - 4, winY - 4, 8, 8);
+
+        // Warm reflection on lake water near cabin
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        const waterGlow = ctx.createLinearGradient(winX, horizonY, winX, horizonY + 25);
+        waterGlow.addColorStop(0, `rgba(255, 190, 90, ${0.45 * flicker})`);
+        waterGlow.addColorStop(1, 'rgba(255, 190, 90, 0)');
+        ctx.fillStyle = waterGlow;
+        ctx.fillRect(winX - 10, horizonY, 20, 25);
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================================
+       6. Procedural Aurora Borealis (북극광)
+       ========================================================================== */
+    function drawAurora(timeNow, alpha) {
+      if (alpha <= 0.02) return;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+
+      const ribbons = 3;
+      for (let r = 0; r < ribbons; r++) {
+        const grad = ctx.createLinearGradient(0, height * 0.08, 0, height * 0.48);
+        grad.addColorStop(0, 'rgba(45, 235, 175, 0)');
+        grad.addColorStop(0.35, `rgba(60, 245, 190, ${0.2 * alpha})`);
+        grad.addColorStop(0.7, `rgba(130, 85, 255, ${0.14 * alpha})`);
+        grad.addColorStop(1, 'rgba(20, 60, 180, 0)');
+
+        ctx.beginPath();
+        const baseH = height * 0.22 + r * 35;
+        ctx.moveTo(0, baseH);
+
+        for (let x = 0; x <= width; x += 14) {
+          const wave1 = Math.sin(x * 0.003 + timeNow * 0.0006 + r * 1.5) * 45;
+          const wave2 = Math.cos(x * 0.006 - timeNow * 0.0008) * 25;
+          ctx.lineTo(x, baseH + wave1 + wave2);
+        }
+
+        ctx.lineTo(width, height * 0.58);
+        ctx.lineTo(0, height * 0.58);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       7. Natural Celestial Bodies (Sun with God Rays & Crescent Moon)
+       ========================================================================== */
+    function drawCelestialBodies(minute, atmos) {
+      const horizonY = height * 0.65;
+      const m = ((minute % 1440) + 1440) % 1440;
+
+      // Sun (Rises around 05:30 to 19:30)
+      const isDay = m >= 300 && m <= 1200;
+      if (isDay && atmos.sunAlpha > 0.01) {
+        const dayProgress = (m - 300) / 900;
+        const sunAngle = Math.PI * (1 - dayProgress);
+        const sunRadius = Math.min(width, height) * 0.48;
+        const sunCenterX = width * 0.5;
+        const sunCenterY = horizonY + 30;
+
+        const sunX = sunCenterX - Math.cos(sunAngle) * sunRadius;
+        const sunY = sunCenterY - Math.sin(sunAngle) * (sunRadius * 0.78);
+
+        // Sun Corona / Atmosphere Scattering
+        const sunGlow = ctx.createRadialGradient(sunX, sunY, 15, sunX, sunY, 180);
+        sunGlow.addColorStop(0, `rgba(255, 252, 235, ${0.95 * atmos.sunAlpha})`);
+        sunGlow.addColorStop(0.2, `rgba(255, 215, 120, ${0.55 * atmos.sunAlpha})`);
+        sunGlow.addColorStop(0.65, `rgba(255, 135, 60, ${0.18 * atmos.sunAlpha})`);
+        sunGlow.addColorStop(1, 'rgba(255, 100, 20, 0)');
+
+        ctx.beginPath();
+        ctx.arc(sunX, sunY, 180, 0, Math.PI * 2);
+        ctx.fillStyle = sunGlow;
+        ctx.fill();
+
+        // Sun Core Disk (Squishes slightly near horizon due to atmospheric refraction)
+        const isNearHorizon = Math.abs(sunY - horizonY) < 120;
+        const squishY = isNearHorizon ? 0.85 : 1.0;
+
+        ctx.save();
+        ctx.translate(sunX, sunY);
+        ctx.scale(1.0, squishY);
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 250, ${atmos.sunAlpha})`;
+        ctx.shadowColor = 'rgba(255, 235, 160, 0.95)';
+        ctx.shadowBlur = 35;
+        ctx.fill();
+        ctx.restore();
+
+        // God Rays (Crepuscular Rays) when sun is low
+        if (sunY > horizonY - 150 && sunY < horizonY + 35) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'screen';
+          const rayGrad = ctx.createRadialGradient(sunX, sunY, 20, sunX, sunY, width * 0.7);
+          rayGrad.addColorStop(0, `rgba(255, 215, 135, ${0.32 * atmos.sunAlpha})`);
+          rayGrad.addColorStop(1, 'rgba(255, 180, 80, 0)');
+          ctx.fillStyle = rayGrad;
+          ctx.fillRect(0, 0, width, height);
+          ctx.restore();
+        }
+      }
+
+      // Moon (Nightfall to Dawn)
+      if (atmos.moonAlpha > 0.01) {
+        let nightProgress = (m >= 1110) ? (m - 1110) / 720 : (m <= 390 ? (m + 330) / 720 : 0.5);
+        const moonAngle = Math.PI * (1 - nightProgress);
+        const moonRadius = Math.min(width, height) * 0.44;
+        const moonX = width * 0.5 - Math.cos(moonAngle) * moonRadius;
+        const moonY = horizonY + 20 - Math.sin(moonAngle) * (moonRadius * 0.75);
+
+        if (moonY < horizonY + 25) {
+          // Soft moon halo
+          const moonGlow = ctx.createRadialGradient(moonX, moonY, 12, moonX, moonY, 125);
+          moonGlow.addColorStop(0, `rgba(220, 240, 255, ${0.48 * atmos.moonAlpha})`);
+          moonGlow.addColorStop(0.4, `rgba(160, 200, 255, ${0.16 * atmos.moonAlpha})`);
+          moonGlow.addColorStop(1, 'rgba(100, 150, 255, 0)');
+
+          ctx.beginPath();
+          ctx.arc(moonX, moonY, 125, 0, Math.PI * 2);
+          ctx.fillStyle = moonGlow;
+          ctx.fill();
+
+          // Elegant Crescent Moon with Soft Shadow
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(moonX, moonY, 22, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 253, 240, ${0.96 * atmos.moonAlpha})`;
+          ctx.shadowColor = 'rgba(210, 238, 255, 0.85)';
+          ctx.shadowBlur = 22;
+          ctx.fill();
+
+          // Dark crescent mask
+          ctx.beginPath();
+          ctx.arc(moonX + 11, moonY - 5, 20, 0, Math.PI * 2);
+          ctx.fillStyle = `rgb(${atmos.skyTop[0]}, ${atmos.skyTop[1]}, ${atmos.skyTop[2]})`;
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    /* ==========================================================================
+       8. Realistic Reflective Lake with Dynamic Glitter (윤슬) & Ripples
+       ========================================================================== */
+    function drawReflectiveWater(horizonY, atmos, timeNow) {
+      const waterHeight = height - horizonY;
+      const waterGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+      waterGrad.addColorStop(0, `rgb(${atmos.waterTop[0]}, ${atmos.waterTop[1]}, ${atmos.waterTop[2]})`);
+      waterGrad.addColorStop(1, `rgb(${atmos.waterBottom[0]}, ${atmos.waterBottom[1]}, ${atmos.waterBottom[2]})`);
+
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, horizonY, width, waterHeight);
+
+      // Inverted Mountain Reflection Blur on Water
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = `rgb(${Math.round(atmos.skyTop[0] * 0.4)}, ${Math.round(atmos.skyTop[1] * 0.4)}, ${Math.round(atmos.skyTop[2] * 0.4)})`;
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY);
+      for (let x = 0; x <= width; x += 15) {
+        const reflY = horizonY + Math.sin(x * 0.004) * 20 + 25;
+        ctx.lineTo(x, reflY);
+      }
+      ctx.lineTo(width, horizonY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Dynamic Shimmer / Specular Glitter Trail (윤슬)
+      const m = ((state.minuteOfDay % 1440) + 1440) % 1440;
+      let lightSourceX = null;
+      let lightR = 255, lightG = 255, lightB = 255, lightAlpha = 0;
+
+      if (atmos.sunAlpha > 0.1 && m >= 300 && m <= 1200) {
+        const dayProgress = (m - 300) / 900;
+        const sunAngle = Math.PI * (1 - dayProgress);
+        lightSourceX = width * 0.5 - Math.cos(sunAngle) * (Math.min(width, height) * 0.48);
+        lightR = 255; lightG = 215; lightB = 140;
+        lightAlpha = 0.5 * atmos.sunAlpha;
+      } else if (atmos.moonAlpha > 0.1) {
+        let nightProgress = (m >= 1110) ? (m - 1110) / 720 : (m <= 390 ? (m + 330) / 720 : 0.5);
+        const moonAngle = Math.PI * (1 - nightProgress);
+        lightSourceX = width * 0.5 - Math.cos(moonAngle) * (Math.min(width, height) * 0.44);
+        lightR = 210; lightG = 238; lightB = 255;
+        lightAlpha = 0.38 * atmos.moonAlpha;
+      }
+
+      if (lightSourceX !== null && lightSourceX > -60 && lightSourceX < width + 60) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        const waveCount = 35;
+        for (let i = 0; i < waveCount; i++) {
+          const depth = i / waveCount;
+          const y = horizonY + Math.pow(depth, 1.7) * waterHeight;
+          const trailWidth = (40 + depth * 140);
+          const xDrift = Math.sin(timeNow * 0.002 + i * 0.7) * (12 * depth);
+
+          // Multiple glittering highlights per wave line
+          const glintCount = Math.floor(4 + depth * 8);
+          for (let g = 0; g < glintCount; g++) {
+            const gx = lightSourceX + (Math.random() - 0.5) * trailWidth + xDrift;
+            const gw = Math.random() * 12 + 6;
+            const ga = (Math.sin(timeNow * 0.005 + g + i) * 0.3 + 0.7) * lightAlpha;
+
+            ctx.fillStyle = `rgba(${lightR}, ${lightG}, ${lightB}, ${ga})`;
+            ctx.fillRect(gx - gw / 2, y, gw, 1.5 + depth * 2.5);
+          }
+        }
+        ctx.restore();
+      }
+
+      // Gentle Lapping Waves (Sinusoidal ripple bands)
+      ctx.save();
+      const waveRows = 28;
+      for (let j = 0; j < waveRows; j++) {
+        const ratio = j / waveRows;
+        const y = horizonY + Math.pow(ratio, 1.6) * waterHeight;
+        const alpha = (0.04 + ratio * 0.14);
+
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.lineWidth = 1 + ratio * 2;
+        ctx.beginPath();
+
+        const step = 20;
+        for (let x = 0; x <= width; x += step) {
+          const wave = Math.sin(x * 0.018 + timeNow * 0.0016 + j * 1.5) * (1.6 * ratio);
+          if (x === 0) ctx.moveTo(x, y + wave);
+          else ctx.lineTo(x, y + wave);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Interactive Concentric Water Ripples (Click or Rain impact)
+      for (let rIdx = state.waterRipples.length - 1; rIdx >= 0; rIdx--) {
+        const rip = state.waterRipples[rIdx];
+        rip.radius += 0.65;
+        rip.alpha -= 0.016;
+
+        if (rip.alpha <= 0) {
+          state.waterRipples.splice(rIdx, 1);
+        } else {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${rip.alpha * 0.6})`;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.ellipse(rip.x, rip.y, rip.radius * 2.2, rip.radius * 0.7, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    /* ==========================================================================
+       9. Procedural Clouds with Atmospheric Depth
+       ========================================================================== */
+    function drawClouds(atmos) {
+      state.clouds.forEach(cloud => {
+        cloud.x += cloud.speed;
+        if (cloud.x > width + 220) {
+          cloud.x = -260;
+          cloud.y = Math.random() * (height * 0.34) + 25;
+        }
+
+        ctx.save();
+        ctx.translate(cloud.x, cloud.y);
+        ctx.scale(cloud.scale, cloud.scale);
+
+        const cloudR = Math.round(atmos.skyBottom[0] * 0.5 + 130);
+        const cloudG = Math.round(atmos.skyBottom[1] * 0.5 + 130);
+        const cloudB = Math.round(atmos.skyBottom[2] * 0.5 + 140);
+
+        ctx.fillStyle = `rgba(${cloudR}, ${cloudG}, ${cloudB}, ${cloud.opacity})`;
+
+        cloud.puffs.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.ox, p.oy, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.restore();
+      });
+    }
+
+    /* ==========================================================================
+       10. Flying Birds Flock (Dawn & Sunset)
+       ========================================================================== */
+    function drawBirds(timeNow, atmos) {
+      const m = ((state.minuteOfDay % 1440) + 1440) % 1440;
+      // Active during dawn (300-450) and sunset/dusk (1050-1200)
+      const isDawn = m >= 300 && m <= 450;
+      const isDusk = m >= 1050 && m <= 1200;
+
+      if (!isDawn && !isDusk) return;
+
+      ctx.fillStyle = `rgba(${Math.round(atmos.skyTop[0] * 0.3)}, ${Math.round(atmos.skyTop[1] * 0.3)}, ${Math.round(atmos.skyTop[2] * 0.3)}, 0.85)`;
+
+      state.birds.forEach(b => {
+        b.x += b.speed;
+        b.wingPhase += 0.12;
+
+        if (b.x > width + 100) {
+          b.x = -80;
+          b.y = height * 0.2 + Math.random() * (height * 0.2);
+        }
+
+        const wingY = Math.sin(b.wingPhase) * (b.size * 0.6);
+        ctx.beginPath();
+        ctx.moveTo(b.x - b.size, b.y + wingY);
+        ctx.quadraticCurveTo(b.x - b.size * 0.4, b.y - b.size * 0.3, b.x, b.y);
+        ctx.quadraticCurveTo(b.x + b.size * 0.4, b.y - b.size * 0.3, b.x + b.size, b.y + wingY);
+        ctx.lineTo(b.x, b.y + 1);
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+
+    /* ==========================================================================
+       11. Weather Engine (Gentle Rain, Soft Snow, Shooting Stars)
+       ========================================================================== */
+    function updateWeather(currentTime) {
+      // 1. Rain Mode
+      if (state.weather === 'rain') {
+        ctx.strokeStyle = 'rgba(180, 215, 255, 0.45)';
+        ctx.lineWidth = 1.3;
+        ctx.lineCap = 'round';
+
+        state.rainDrops.forEach(drop => {
+          ctx.beginPath();
+          ctx.moveTo(drop.x, drop.y);
+          ctx.lineTo(drop.x - 2.5, drop.y + drop.length);
+          ctx.stroke();
+
+          drop.y += drop.speed;
+          drop.x -= 1.2;
+
+          if (drop.y > height) {
+            drop.y = -drop.length;
+            drop.x = Math.random() * width + 40;
+
+            if (drop.y >= height * 0.65) {
+              state.waterRipples.push({
+                x: drop.x,
+                y: height * 0.65 + Math.random() * (height * 0.35),
+                radius: 1,
+                alpha: 0.55
+              });
+            }
+          }
+        });
+      }
+
+      // 2. Snow Mode (Gentle fluttering snowfall)
+      if (state.weather === 'snow') {
+        state.snowflakes.forEach(flake => {
+          flake.y += flake.speedY;
+          flake.swayPhase += flake.swaySpeed;
+          flake.x += Math.sin(flake.swayPhase) * 0.8 + flake.speedX;
+
+          if (flake.y > height) {
+            flake.y = -5;
+            flake.x = Math.random() * width;
+          }
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${flake.alpha})`;
+          ctx.beginPath();
+          ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // 3. Meteor Shower
+      const meteorInterval = state.weather === 'meteor' ? 0.09 : 0.012;
+      if (state.stars.length > 0 && Math.random() < meteorInterval) {
+        addShootingStar();
+      }
+
+      for (let i = state.shootingStars.length - 1; i >= 0; i--) {
+        const star = state.shootingStars[i];
+        star.x += star.dx;
+        star.y += star.dy;
+        star.life -= star.decay;
+
+        if (star.life <= 0) {
+          state.shootingStars.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.strokeStyle = star.color;
+          ctx.lineWidth = 2 * star.life;
+          ctx.beginPath();
+          ctx.moveTo(star.x, star.y);
+          ctx.lineTo(star.x - star.dx * (star.length / 15), star.y - star.dy * (star.length / 15));
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // 4. Interactive Fairy Dust / Stardust Trail on Mouse Move
+      for (let sIdx = state.stardust.length - 1; sIdx >= 0; sIdx--) {
+        const dust = state.stardust[sIdx];
+        dust.x += dust.vx;
+        dust.y += dust.vy;
+        dust.alpha -= 0.018;
+
+        if (dust.alpha <= 0) {
+          state.stardust.splice(sIdx, 1);
+        } else {
+          ctx.fillStyle = `rgba(255, 240, 190, ${dust.alpha})`;
+          ctx.beginPath();
+          ctx.arc(dust.x, dust.y, dust.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    /* ==========================================================================
+       12. Healing Generative Audio Engine (Web Audio API Synthesizer)
+       Procedural: Ambient Pad, Wind Chimes, Breeze, Rain, Night Crickets, Campfire
+       ========================================================================== */
+    class HealingAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.musicGain = null;
+        this.natureGain = null;
+        this.chimeGain = null;
+        this.windNode = null;
+        this.rainNode = null;
+        this.cricketNode = null;
+        this.padTimer = null;
+        this.chimeTimer = null;
+        this.isInitialized = false;
+
+        // Healing Pentatonic Harmonics (D, E, F#, A, B, D)
+        this.padNotes = [146.83, 164.81, 185.00, 220.00, 246.94, 293.66, 329.63, 369.99, 440.00];
+        // Crystal Wind Chime Frequencies (Hz - High delicate crystal bell tuning)
+        this.chimeNotes = [880.0, 987.77, 1174.66, 1318.51, 1479.98, 1760.0, 1975.53];
+      }
+
+      init() {
+        if (this.isInitialized) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(state.masterGain, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+
+        this.musicGain = this.ctx.createGain();
+        this.musicGain.gain.setValueAtTime(state.musicEnabled ? 0.35 : 0, this.ctx.currentTime);
+        this.musicGain.connect(this.masterGain);
+
+        this.natureGain = this.ctx.createGain();
+        this.natureGain.gain.setValueAtTime(state.natureEnabled ? 0.4 : 0, this.ctx.currentTime);
+        this.natureGain.connect(this.masterGain);
+
+        this.chimeGain = this.ctx.createGain();
+        this.chimeGain.gain.setValueAtTime(state.chimeEnabled ? 0.28 : 0, this.ctx.currentTime);
+        this.chimeGain.connect(this.masterGain);
+
+        this.startBreeze();
+        this.startPadCycle();
+        this.startChimeCycle();
+        this.isInitialized = true;
+      }
+
+      setMasterVolume(val) {
+        if (!this.ctx) return;
+        this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.05);
+      }
+
+      toggleMusic(enabled) {
+        if (!this.ctx) return;
+        this.musicGain.gain.setTargetAtTime(enabled ? 0.35 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      toggleNature(enabled) {
+        if (!this.ctx) return;
+        this.natureGain.gain.setTargetAtTime(enabled ? 0.4 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      toggleChimes(enabled) {
+        if (!this.ctx) return;
+        this.chimeGain.gain.setTargetAtTime(enabled ? 0.28 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      // Procedural Soft Breeze (Filtered Pink Noise with Slow Sweeping LFO)
+      startBreeze() {
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035;
+          b6 = white * 0.115926;
+        }
+
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(260, this.ctx.currentTime);
+
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        lfo.frequency.setValueAtTime(0.08, this.ctx.currentTime);
+        lfoGain.gain.setValueAtTime(110, this.ctx.currentTime);
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        whiteNoise.connect(filter);
+        filter.connect(this.natureGain);
+
+        whiteNoise.start();
+        lfo.start();
+        this.windNode = { whiteNoise, filter, lfo };
+      }
+
+      // Procedural Ethereal Ambient Pad (Brian Eno / Lofi Healing Drone)
+      startPadCycle() {
+        const playChord = () => {
+          if (!this.ctx || !state.audioActive) return;
+          const now = this.ctx.currentTime;
+          const baseIdx = Math.floor(Math.random() * 4);
+          const chord = [
+            this.padNotes[baseIdx],
+            this.padNotes[baseIdx + 2],
+            this.padNotes[baseIdx + 4]
+          ];
+
+          chord.forEach(freq => {
+            const osc = this.ctx.createOscillator();
+            const noteGain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+
+            osc.type = Math.random() > 0.4 ? 'sine' : 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(650, now);
+
+            noteGain.gain.setValueAtTime(0, now);
+            noteGain.gain.linearRampToValueAtTime(0.055, now + 3.2); // Gentle attack
+            noteGain.gain.linearRampToValueAtTime(0, now + 9.8);     // Slow release
+
+            osc.connect(filter);
+            filter.connect(noteGain);
+            noteGain.connect(this.musicGain);
+
+            osc.start(now);
+            osc.stop(now + 10.2);
+          });
+
+          this.padTimer = setTimeout(playChord, (Math.random() * 3000 + 7500));
+        };
+
+        playChord();
+      }
+
+      // Procedural Crystal Wind Chimes (맑은 풍경 소리)
+      startChimeCycle() {
+        const ringChime = () => {
+          if (!this.ctx || !state.audioActive) return;
+          if (state.chimeEnabled && Math.random() > 0.3) {
+            const now = this.ctx.currentTime;
+            const noteCount = Math.floor(Math.random() * 3) + 1;
+
+            for (let i = 0; i < noteCount; i++) {
+              const freq = this.chimeNotes[Math.floor(Math.random() * this.chimeNotes.length)];
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freq, now + i * 0.15);
+
+              gain.gain.setValueAtTime(0, now + i * 0.15);
+              gain.gain.linearRampToValueAtTime(0.07, now + i * 0.15 + 0.02);
+              gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.15 + 2.8);
+
+              osc.connect(gain);
+              gain.connect(this.chimeGain);
+
+              osc.start(now + i * 0.15);
+              osc.stop(now + i * 0.15 + 3.0);
+            }
+          }
+          this.chimeTimer = setTimeout(ringChime, (Math.random() * 4000 + 4000));
+        };
+
+        ringChime();
+      }
+
+      // Procedural Rain Sound
+      toggleRainSound(enable) {
+        if (!this.ctx) return;
+        if (enable && !this.rainNode) {
+          const bufferSize = this.ctx.sampleRate * 2;
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * 0.12;
+          }
+
+          const rainSource = this.ctx.createBufferSource();
+          rainSource.buffer = noiseBuffer;
+          rainSource.loop = true;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1400, this.ctx.currentTime);
+
+          const rainGain = this.ctx.createGain();
+          rainGain.gain.setValueAtTime(0, this.ctx.currentTime);
+          rainGain.gain.linearRampToValueAtTime(0.24, this.ctx.currentTime + 1.5);
+
+          rainSource.connect(filter);
+          filter.connect(rainGain);
+          rainGain.connect(this.natureGain);
+
+          rainSource.start();
+          this.rainNode = { rainSource, rainGain };
+        } else if (!enable && this.rainNode) {
+          this.rainNode.rainGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 1.0);
+          setTimeout(() => {
+            if (this.rainNode) {
+              this.rainNode.rainSource.stop();
+              this.rainNode = null;
+            }
+          }, 1100);
+        }
+      }
+    }
+
+    const soundEngine = new HealingAudioEngine();
+
+    /* ==========================================================================
+       13. Mindful Breathing Guide (4-4-4-4 Box Breathing)
+       ========================================================================== */
+    let breatheInterval = null;
+    let breathePhase = 0; // 0: Inhale, 1: Hold, 2: Exhale, 3: Hold
+
+    function stepBreathing() {
+      if (!state.breatheActive) return;
+      breathePhase = (breathePhase + 1) % 4;
+
+      if (breathePhase === 0) {
+        breatheText.innerText = '천천히 들이마시기 (4초)';
+        breatheRing.style.transform = 'scale(1.4)';
+        breatheCore.style.transform = 'scale(1.4)';
+        breatheRing.style.borderColor = 'rgba(56, 189, 248, 0.7)';
+      } else if (breathePhase === 1) {
+        breatheText.innerText = '숨을 멈추고 고요히 (4초)';
+        breatheRing.style.borderColor = 'rgba(129, 140, 248, 0.7)';
+      } else if (breathePhase === 2) {
+        breatheText.innerText = '천천히 내쉬기 (4초)';
+        breatheRing.style.transform = 'scale(1.0)';
+        breatheCore.style.transform = 'scale(1.0)';
+        breatheRing.style.borderColor = 'rgba(251, 146, 60, 0.6)';
+      } else if (breathePhase === 3) {
+        breatheText.innerText = '마음을 비우고 멈추기 (4초)';
+        breatheRing.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+      }
+    }
+
+    function toggleBreathing() {
+      state.breatheActive = !state.breatheActive;
+      btnBreatheToggle.classList.toggle('active', state.breatheActive);
+      breatheWidget.classList.toggle('active', state.breatheActive);
+
+      clearInterval(breatheInterval);
+      if (state.breatheActive) {
+        breathePhase = 3;
+        stepBreathing();
+        breatheInterval = setInterval(stepBreathing, 4000);
+        showToast('🧘 힐링 호흡 가이드 시작 (4-4-4-4 박스 호흡)');
+      } else {
+        showToast('호흡 가이드 종료');
+      }
+    }
+    btnBreatheToggle.addEventListener('click', toggleBreathing);
+
+    /* ==========================================================================
+       14. Main Rendering Loop (60-144 FPS)
+       ========================================================================== */
+    function render(currentTime) {
+      const dt = (currentTime - state.lastTimestamp) / 1000;
+      state.lastTimestamp = currentTime;
+
+      // Time Calculation
+      if (state.isLiveSync) {
+        const now = new Date();
+        const mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+        state.minuteOfDay = mins;
+        timeSlider.value = Math.round(mins);
+      } else if (!state.isPaused && state.timeMultiplier > 0) {
+        state.minuteOfDay = (state.minuteOfDay + (dt * state.timeMultiplier * 0.4)) % 1440;
+        timeSlider.value = Math.round(state.minuteOfDay);
+      }
+
+      // Display Time & Label
+      const totalMinutes = Math.floor(state.minuteOfDay);
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+      const secs = Math.floor((state.minuteOfDay - totalMinutes) * 60);
+
+      timeDisplay.innerText = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      sliderTimeLabel.innerText = `시간: ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+
+      // Date Display
+      const today = new Date();
+      const weekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+      dateDisplay.innerText = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일 (${weekDays[today.getDay()]})`;
+
+      // Atmosphere Calculation
+      const atmos = getAtmosphere(state.minuteOfDay);
+      greetingIcon.innerText = atmos.greeting.icon;
+      greetingText.innerText = atmos.greeting.text;
+
+      // 1. Clear Canvas & Draw Sky Gradient
+      const horizonY = height * 0.65;
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+      skyGrad.addColorStop(0, `rgb(${atmos.skyTop[0]}, ${atmos.skyTop[1]}, ${atmos.skyTop[2]})`);
+      skyGrad.addColorStop(0.55, `rgb(${atmos.skyMid[0]}, ${atmos.skyMid[1]}, ${atmos.skyMid[2]})`);
+      skyGrad.addColorStop(1, `rgb(${atmos.skyBottom[0]}, ${atmos.skyBottom[1]}, ${atmos.skyBottom[2]})`);
+
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. Horizon Glow
+      const horizonGrad = ctx.createRadialGradient(
+        width * 0.5, horizonY, 20,
+        width * 0.5, horizonY, width * 0.75
+      );
+      horizonGrad.addColorStop(0, `rgba(${atmos.horizonGlow[0]}, ${atmos.horizonGlow[1]}, ${atmos.horizonGlow[2]}, ${atmos.horizonGlow[3]})`);
+      horizonGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = horizonGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // 3. Twinkling Stars
+      if (atmos.starAlpha > 0.02) {
+        state.stars.forEach(star => {
+          const twinkle = Math.sin(currentTime * star.twinkleSpeed + star.phase);
+          const alpha = Math.max(0, (0.4 + twinkle * 0.6) * atmos.starAlpha);
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+          ctx.fillStyle = `${star.color}${alpha})`;
+          ctx.fill();
+        });
+      }
+
+      // 4. Aurora Borealis
+      drawAurora(currentTime, atmos.auroraAlpha);
+
+      // 5. Sun & Moon Celestial Mechanics
+      drawCelestialBodies(state.minuteOfDay, atmos);
+
+      // 6. Flying Birds Flock
+      drawBirds(currentTime, atmos);
+
+      // 7. Soft Procedural Clouds
+      drawClouds(atmos);
+
+      // 8. Multi-Layer Alpine Mountains & Lakeside Cabin
+      drawLayeredLandscape(horizonY, atmos, currentTime);
+
+      // 9. Reflective Lake with Dynamic Glitter & Ripples
+      drawReflectiveWater(horizonY, atmos, currentTime);
+
+      // 10. Fireflies (Night) or Sakura Petals (Day)
+      if (atmos.moonAlpha > 0.35) {
+        state.fireflies.forEach(ff => {
+          ff.x += ff.vx;
+          ff.y += ff.vy;
+          ff.glowPhase += ff.glowSpeed;
+
+          if (ff.x < 0) ff.x = width;
+          if (ff.x > width) ff.x = 0;
+          if (ff.y < horizonY - 40) ff.y = height;
+          if (ff.y > height) ff.y = horizonY;
+
+          const glow = (Math.sin(ff.glowPhase) + 1) / 2;
+          const ffAlpha = glow * atmos.moonAlpha * 0.85;
+
+          const ffGrad = ctx.createRadialGradient(ff.x, ff.y, 1, ff.x, ff.y, ff.size * 5);
+          ffGrad.addColorStop(0, `rgba(230, 255, 140, ${ffAlpha})`);
+          ffGrad.addColorStop(0.4, `rgba(140, 240, 80, ${ffAlpha * 0.5})`);
+          ffGrad.addColorStop(1, 'rgba(0, 200, 0, 0)');
+
+          ctx.beginPath();
+          ctx.arc(ff.x, ff.y, ff.size * 5, 0, Math.PI * 2);
+          ctx.fillStyle = ffGrad;
+          ctx.fill();
+        });
+      } else if (atmos.sunAlpha > 0.35) {
+        state.petals.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.angle += p.va;
+
+          if (p.x > width) p.x = -10;
+          if (p.y > height) p.y = -10;
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      // 11. Weather Particles & Shooting Stars
+      updateWeather(currentTime);
+
+      requestAnimationFrame(render);
+    }
+
+    /* ==========================================================================
+       15. Mouse Interactions (Interactive Water Waves & Stardust Trail)
+       ========================================================================== */
+    window.addEventListener('mousemove', (e) => {
+      // Create subtle floating fairy dust particles
+      if (Math.random() < 0.28) {
+        state.stardust.push({
+          x: e.clientX,
+          y: e.clientY,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: Math.random() * -0.6 - 0.2,
+          size: Math.random() * 2 + 1,
+          alpha: 0.75
+        });
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('#ui-container') || e.target.closest('#top-right-tools')) return;
+      const horizonY = height * 0.65;
+      // Click on water creates interactive ripples
+      if (e.clientY >= horizonY - 10) {
+        state.waterRipples.push({
+          x: e.clientX,
+          y: e.clientY,
+          radius: 2,
+          alpha: 0.85
+        });
+      }
+    });
+
+    /* ==========================================================================
+       16. UI Control Listeners & Preset Handling
+       ========================================================================== */
+    timeSlider.addEventListener('input', (e) => {
+      state.isLiveSync = false;
+      btnLiveSync.classList.remove('active');
+      state.minuteOfDay = parseFloat(e.target.value);
+    });
+
+    btnLiveSync.addEventListener('click', () => {
+      state.isLiveSync = true;
+      state.isPaused = false;
+      btnLiveSync.classList.add('active');
+      document.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
+      showToast('🟢 현재 컴퓨터의 실제 시간과 동기화되었습니다');
+    });
+
+    document.querySelectorAll('[data-time]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.isLiveSync = false;
+        btnLiveSync.classList.remove('active');
+        state.minuteOfDay = parseFloat(btn.dataset.time);
+        timeSlider.value = state.minuteOfDay;
+
+        document.querySelectorAll('[data-time]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        showToast(`${btn.innerText} 테마 적용`);
+      });
+    });
+
+    const speedButtons = [
+      { id: 'btnSpeed1x', mult: 1.0, pause: false },
+      { id: 'btnSpeed30x', mult: 30.0, pause: false },
+      { id: 'btnSpeed120x', mult: 120.0, pause: false },
+      { id: 'btnSpeedPause', mult: 0, pause: true }
+    ];
+
+    speedButtons.forEach(s => {
+      document.getElementById(s.id).addEventListener('click', () => {
+        state.isLiveSync = false;
+        btnLiveSync.classList.remove('active');
+        state.timeMultiplier = s.mult;
+        state.isPaused = s.pause;
+
+        speedButtons.forEach(other => document.getElementById(other.id).classList.remove('active'));
+        document.getElementById(s.id).classList.add('active');
+        showToast(s.pause ? '시간 흐름 일시정지' : `시간 배속: ${s.mult}x`);
+      });
+    });
+
+    // Weather Buttons
+    const btnWeatherClear = document.getElementById('btnWeatherClear');
+    const btnWeatherRain = document.getElementById('btnWeatherRain');
+    const btnWeatherSnow = document.getElementById('btnWeatherSnow');
+    const btnWeatherMeteor = document.getElementById('btnWeatherMeteor');
+
+    function setWeather(mode) {
+      state.weather = mode;
+      btnWeatherClear.classList.toggle('active', mode === 'clear');
+      btnWeatherRain.classList.toggle('active', mode === 'rain');
+      btnWeatherSnow.classList.toggle('active', mode === 'snow');
+      btnWeatherMeteor.classList.toggle('active', mode === 'meteor');
+
+      soundEngine.toggleRainSound(mode === 'rain');
+      if (mode === 'clear') showToast('☀️ 맑고 고요한 날씨');
+      if (mode === 'rain') showToast('🌧️ 촉촉한 비와 물결 소리');
+      if (mode === 'snow') showToast('❄️ 포근하게 흩날리는 눈');
+      if (mode === 'meteor') showToast('🌠 밤하늘의 쏟아지는 별똥별');
+    }
+
+    btnWeatherClear.addEventListener('click', () => setWeather('clear'));
+    btnWeatherRain.addEventListener('click', () => setWeather('rain'));
+    btnWeatherSnow.addEventListener('click', () => setWeather('snow'));
+    btnWeatherMeteor.addEventListener('click', () => setWeather('meteor'));
+
+    // Cozy Cabin Light Toggle
+    btnToggleCabin.addEventListener('click', () => {
+      state.cabinLight = !state.cabinLight;
+      btnToggleCabin.classList.toggle('active', state.cabinLight);
+      showToast(state.cabinLight ? '🏡 호숫가 오두막 등불 켜짐' : '🏡 오두막 등불 꺼짐');
+    });
+
+    // Sound Controls
+    function toggleSoundMaster() {
+      if (!state.audioActive) {
+        soundEngine.init();
+        state.audioActive = true;
+        soundIcon.innerText = '🔊';
+        btnSoundMaster.style.borderColor = 'rgba(56, 189, 248, 0.8)';
+        showToast('🔊 힐링 사운드스케이프 재생 시작');
+      } else {
+        state.audioActive = false;
+        soundIcon.innerText = '🔇';
+        btnSoundMaster.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        soundEngine.setMasterVolume(0);
+        showToast('🔇 사운드 음소거');
+        return;
+      }
+      soundEngine.setMasterVolume(state.masterGain);
+    }
+    btnSoundMaster.addEventListener('click', toggleSoundMaster);
+
+    btnToggleChime.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.chimeEnabled = !state.chimeEnabled;
+      btnToggleChime.classList.toggle('active', state.chimeEnabled);
+      soundEngine.toggleChimes(state.chimeEnabled);
+      showToast(state.chimeEnabled ? '🔔 맑은 풍경 소리 켜짐' : '🔔 풍경 소리 꺼짐');
+    });
+
+    btnToggleMusic.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.musicEnabled = !state.musicEnabled;
+      btnToggleMusic.classList.toggle('active', state.musicEnabled);
+      soundEngine.toggleMusic(state.musicEnabled);
+      showToast(state.musicEnabled ? '🎹 앰비언트 코드 패드 켜짐' : '🎹 패드 꺼짐');
+    });
+
+    btnToggleNature.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.natureEnabled = !state.natureEnabled;
+      btnToggleNature.classList.toggle('active', state.natureEnabled);
+      soundEngine.toggleNature(state.natureEnabled);
+      showToast(state.natureEnabled ? '🍃 자연의 바람/풀벌레 소리 켜짐' : '🍃 자연음 꺼짐');
+    });
+
+    masterVolume.addEventListener('input', (e) => {
+      state.masterGain = parseFloat(e.target.value);
+      if (state.audioActive) {
+        soundEngine.setMasterVolume(state.masterGain);
+      }
+    });
+
+    // Zen Mode & Fullscreen
+    function toggleZenMode() {
+      state.zenMode = !state.zenMode;
+      document.body.classList.toggle('zen-mode', state.zenMode);
+      showToast(state.zenMode ? '👁️ 감상 모드 (단축키 [H]로 다시 표시)' : '기본 모드로 복귀');
+    }
+    btnZenMode.addEventListener('click', toggleZenMode);
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'h' || e.key === 'H') {
+        toggleZenMode();
+      } else if (e.key === 'b' || e.key === 'B') {
+        toggleBreathing();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        toggleSoundMaster();
+      }
+    });
+
+    // Auto-init on load
+    resizeCanvas();
+    requestAnimationFrame(render);
+    showToast('✨ 힐링 풍경이 시작되었습니다. [H]키: UI 숨김 / [B]키: 호흡 가이드');
+  </script>
+</body>
+</html>

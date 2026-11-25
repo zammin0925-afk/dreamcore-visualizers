@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고요한 밤의 불멍 (Cozy Night Campfire)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #030408;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: #fff;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Ambient Screen Glow & Vignette */
+    #ambient-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.7);
+      transition: background 0.1s ease;
+    }
+
+    /* Top Left Minimal Clock & Ambience Info */
+    #status-widget {
+      position: absolute;
+      top: 28px;
+      left: 32px;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    #time-display {
+      font-size: 48px;
+      font-weight: 200;
+      letter-spacing: -1.5px;
+      line-height: 1;
+      text-shadow: 0 4px 25px rgba(0,0,0,0.8), 0 0 10px rgba(251, 146, 60, 0.4);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #campfire-title {
+      font-size: 14px;
+      font-weight: 300;
+      color: rgba(254, 215, 170, 0.9);
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(18, 12, 10, 0.55);
+      padding: 6px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(251, 146, 60, 0.25);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+
+    #quote-text {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.5px;
+      font-style: italic;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+      transition: opacity 0.8s ease;
+    }
+
+    /* Top Right Floating Action Tools */
+    #top-right-tools {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-tool-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(20, 14, 12, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 146, 60, 0.3);
+      color: #fed7aa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .icon-tool-btn:hover {
+      background: rgba(251, 146, 60, 0.25);
+      color: #fff;
+      transform: scale(1.08);
+      border-color: rgba(251, 146, 60, 0.6);
+      box-shadow: 0 0 16px rgba(251, 146, 60, 0.4);
+    }
+
+    .icon-tool-btn.active {
+      background: rgba(251, 146, 60, 0.35);
+      border-color: rgba(251, 146, 60, 0.8);
+      box-shadow: 0 0 18px rgba(251, 146, 60, 0.5);
+    }
+
+    /* Floating Bottom Campfire Controls */
+    #ui-container {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(94%, 900px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-panel {
+      background: rgba(18, 12, 10, 0.68);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(251, 146, 60, 0.25);
+      border-radius: 20px;
+      padding: 14px 22px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 200, 150, 0.15);
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.88);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pill-btn:hover {
+      background: rgba(251, 146, 60, 0.22);
+      color: #fff;
+      border-color: rgba(251, 146, 60, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.4), rgba(239, 68, 68, 0.4));
+      border-color: rgba(251, 146, 60, 0.7);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(251, 146, 60, 0.4);
+    }
+
+    .pill-btn.special-btn {
+      background: linear-gradient(135deg, rgba(234, 88, 12, 0.3), rgba(180, 83, 9, 0.3));
+      border-color: rgba(251, 146, 60, 0.5);
+      color: #fed7aa;
+      font-weight: 600;
+    }
+
+    .pill-btn.special-btn:hover {
+      background: linear-gradient(135deg, rgba(234, 88, 12, 0.5), rgba(180, 83, 9, 0.5));
+      color: #fff;
+    }
+
+    .pill-btn.special-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Sliders */
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slider-label {
+      font-size: 11px;
+      color: rgba(254, 215, 170, 0.8);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fb923c;
+      box-shadow: 0 0 8px rgba(251, 146, 60, 0.8);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* Zen Mode State */
+    body.zen-mode #ui-container {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 35px);
+    }
+
+    body.zen-mode #status-widget {
+      opacity: 0.25;
+      transform: translateY(-6px);
+    }
+
+    body.zen-mode #status-widget:hover {
+      opacity: 0.95;
+    }
+
+    #zen-tip {
+      position: absolute;
+      bottom: 10px;
+      right: 18px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      pointer-events: none;
+      z-index: 5;
+      letter-spacing: 0.4px;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 85px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(20, 14, 12, 0.9);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(251, 146, 60, 0.4);
+      color: #fed7aa;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Interactive Campfire Canvas -->
+  <div id="canvas-container">
+    <canvas id="campfireCanvas"></canvas>
+  </div>
+
+  <div id="ambient-glow"></div>
+
+  <!-- Realtime Clock & Campfire Status -->
+  <div id="status-widget">
+    <div id="time-display">00:00:00</div>
+    <div id="campfire-title">
+      <span>🔥</span>
+      <span id="fire-status-text">타닥타닥 모닥불이 타오르는 중</span>
+    </div>
+    <div id="quote-text">"타오르는 불꽃을 바라보며, 잡념을 태워내세요."</div>
+  </div>
+
+  <!-- Top Right Navigation Tools -->
+  <div id="top-right-tools">
+    <button class="icon-tool-btn" id="btnSoundMaster" title="불멍 사운드 온/오프 (Space 또는 클릭)">
+      <span id="sound-icon">🔇</span>
+    </button>
+    <button class="icon-tool-btn" id="btnMarshmallow" title="마시멜로 굽기 모드 토글 (단축키: M)">
+      🍢
+    </button>
+    <button class="icon-tool-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
+      👁️
+    </button>
+    <button class="icon-tool-btn" id="btnFullscreen" title="전체화면 (단축키: F)">
+      ⛶
+    </button>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">안내 메시지</div>
+
+  <!-- Floating Bottom Controls -->
+  <div id="ui-container">
+    <div class="glass-panel">
+      <div class="controls-row">
+        <!-- Main Actions: Add Wood & Poke Fire -->
+        <div class="btn-group">
+          <button class="pill-btn special-btn" id="btnAddWood" title="장작을 넣어 화력을 키우고 불티를 피워 올립니다">
+            🪵 장작 넣기
+          </button>
+          <button class="pill-btn" id="btnPokeFire" title="불씨를 휘저어 아름다운 불티를 폭발시킵니다">
+            🪄 불씨 쑤시기
+          </button>
+        </div>
+
+        <!-- Fire Intensity Level -->
+        <div class="slider-wrap">
+          <span class="slider-label">화력:</span>
+          <input type="range" id="fireIntensity" min="0.4" max="1.8" step="0.1" value="1.0" style="width: 80px;" title="모닥불 크기 조절">
+        </div>
+
+        <!-- Weather / Ambience Preset -->
+        <div class="btn-group">
+          <span class="slider-label">숲의 날씨:</span>
+          <button class="pill-btn active" id="btnWeatherNight">🌌 맑은 밤하늘</button>
+          <button class="pill-btn" id="btnWeatherRain">🌧️ 잔잔한 밤비</button>
+          <button class="pill-btn" id="btnWeatherWind">💨 거센 산바람</button>
+        </div>
+
+        <!-- Sound Mixer Toggles -->
+        <div class="btn-group" style="align-items: center; gap: 6px;">
+          <button class="pill-btn active" id="btnToggleCrackle" title="타닥타닥 장작 타는 소리">🪵 장작 소리</button>
+          <button class="pill-btn active" id="btnToggleGuitar" title="따뜻한 어쿠스틱 기타 아르페지오">🎸 기타 선율</button>
+          <button class="pill-btn active" id="btnToggleNight" title="숲의 밤 풀벌레 & 바람 소리">🦗 풀벌레</button>
+          <div class="slider-wrap">
+            <span class="slider-label">볼륨:</span>
+            <input type="range" id="masterVolume" min="0" max="1" step="0.05" value="0.55" style="width: 60px;" title="마스터 볼륨">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="zen-tip">단축키: [Space] 사운드 온/오프 · [H] UI 숨김 · [M] 마시멜로 · [F] 전체화면 · [모닥불 드래그] 불티 흩날리기</div>
+
+  <script>
+    /* ==========================================================================
+       1. Global State & Config
+       ========================================================================== */
+    const state = {
+      fireIntensity: 1.0,      // 0.4 (ember) to 1.8 (roaring)
+      targetIntensity: 1.0,
+      woodHeatBoost: 0,        // Temporary heat spike when wood is added
+      weather: 'night',        // 'night', 'rain', 'wind'
+      zenMode: false,
+      marshmallowMode: false,
+      marshmallowRoast: 0.1,   // 0.0 (raw) to 1.0 (golden crispy)
+      audioActive: false,
+      crackleEnabled: true,
+      guitarEnabled: true,
+      nightEnabled: true,
+      masterGain: 0.55,
+      lastTimestamp: performance.now(),
+      mouse: { x: window.innerWidth * 0.5, y: window.innerHeight * 0.75, isDown: false },
+      particles: [],
+      embers: [],
+      smoke: [],
+      flamePoints: [],
+      stars: [],
+      shootingStars: [],
+      rainDrops: []
+    };
+
+    // DOM Elements
+    const canvas = document.getElementById('campfireCanvas');
+    const ctx = canvas.getContext('2d');
+    const ambientGlow = document.getElementById('ambient-glow');
+    const timeDisplay = document.getElementById('time-display');
+    const fireStatusText = document.getElementById('fire-status-text');
+    const quoteText = document.getElementById('quote-text');
+    const toast = document.getElementById('toast');
+    const btnSoundMaster = document.getElementById('btnSoundMaster');
+    const soundIcon = document.getElementById('sound-icon');
+    const btnMarshmallow = document.getElementById('btnMarshmallow');
+    const btnZenMode = document.getElementById('btnZenMode');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnAddWood = document.getElementById('btnAddWood');
+    const btnPokeFire = document.getElementById('btnPokeFire');
+    const fireIntensitySlider = document.getElementById('fireIntensity');
+    const masterVolumeSlider = document.getElementById('masterVolume');
+    const btnWeatherNight = document.getElementById('btnWeatherNight');
+    const btnWeatherRain = document.getElementById('btnWeatherRain');
+    const btnWeatherWind = document.getElementById('btnWeatherWind');
+    const btnToggleCrackle = document.getElementById('btnToggleCrackle');
+    const btnToggleGuitar = document.getElementById('btnToggleGuitar');
+    const btnToggleNight = document.getElementById('btnToggleNight');
+
+    const campfireQuotes = [
+      "타오르는 불꽃을 바라보며, 마음의 잡념을 태워내세요.",
+      "타닥타닥 장작 타는 소리에 귀를 기울여보세요.",
+      "차가운 밤공기 속, 따뜻한 온기가 마음을 감싸옵니다.",
+      "어둠 속에서 환하게 춤추는 불꽃처럼, 당신의 밤도 평온하기를.",
+      "불꽃이 솟아오르고 사그라지듯, 모든 걱정도 흘러갑니다."
+    ];
+    let quoteIdx = 0;
+    setInterval(() => {
+      quoteIdx = (quoteIdx + 1) % campfireQuotes.length;
+      quoteText.style.opacity = 0;
+      setTimeout(() => {
+        quoteText.innerText = `"${campfireQuotes[quoteIdx]}"`;
+        quoteText.style.opacity = 1;
+      }, 700);
+    }, 16000);
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ==========================================================================
+       2. Canvas Sizing & DPR Scaling
+       ========================================================================== */
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      initStars();
+      initRain();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /* ==========================================================================
+       3. Starfield & Raindrop Initializers
+       ========================================================================== */
+    function initStars() {
+      state.stars = [];
+      const count = Math.min(Math.floor((width * height) / 4500), 240);
+      for (let i = 0; i < count; i++) {
+        state.stars.push({
+          x: Math.random() * width,
+          y: Math.random() * (height * 0.65),
+          size: Math.random() * 1.5 + 0.4,
+          twinkleSpeed: Math.random() * 0.03 + 0.015,
+          phase: Math.random() * Math.PI * 2,
+          color: Math.random() > 0.8 ? 'rgba(215, 235, 255, ' : 'rgba(255, 245, 220, '
+        });
+      }
+    }
+
+    function initRain() {
+      state.rainDrops = [];
+      const count = Math.min(Math.floor(width / 3.5), 320);
+      for (let i = 0; i < count; i++) {
+        state.rainDrops.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          speed: Math.random() * 12 + 15,
+          length: Math.random() * 20 + 12,
+          opacity: Math.random() * 0.3 + 0.15
+        });
+      }
+    }
+
+    function addShootingStar() {
+      state.shootingStars.push({
+        x: Math.random() * width * 0.8 + width * 0.1,
+        y: Math.random() * height * 0.25,
+        dx: (Math.random() + 1.2) * 8,
+        dy: (Math.random() + 0.8) * 6,
+        length: Math.random() * 80 + 70,
+        life: 1.0,
+        decay: Math.random() * 0.025 + 0.018
+      });
+    }
+
+    /* ==========================================================================
+       4. Highly Realistic Procedural Campfire Simulation
+       Multi-layered: Hot Charcoal Glow -> Turbulent Flame Tongues -> Embers -> Smoke
+       ========================================================================== */
+    function spawnFlameTongue(fireBaseX, fireBaseY, currentIntensity) {
+      const maxParticles = 65 * currentIntensity;
+      if (state.particles.length < maxParticles) {
+        const spread = 45 * currentIntensity;
+        state.particles.push({
+          x: fireBaseX + (Math.random() - 0.5) * spread,
+          y: fireBaseY,
+          vx: (Math.random() - 0.5) * 1.6 + (state.weather === 'wind' ? 2.4 : 0),
+          vy: -(Math.random() * 4.5 + 3.5) * currentIntensity,
+          radius: (Math.random() * 22 + 16) * currentIntensity,
+          life: 1.0,
+          decay: Math.random() * 0.024 + 0.016,
+          temp: Math.random() * 0.3 + 0.7 // 1.0 = white/yellow hot, 0.0 = deep red
+        });
+      }
+    }
+
+    function spawnEmber(fireBaseX, fireBaseY, count = 1, forceBurst = false) {
+      for (let i = 0; i < count; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * (forceBurst ? 1.6 : 0.8);
+        const speed = (Math.random() * 4 + 2) * (forceBurst ? 2.5 : 1.0);
+        state.embers.push({
+          x: fireBaseX + (Math.random() - 0.5) * 35,
+          y: fireBaseY - Math.random() * 25,
+          vx: Math.cos(angle) * speed + (state.weather === 'wind' ? 2.8 : (Math.random() - 0.5) * 0.8),
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 2.2 + 0.8,
+          life: 1.0,
+          decay: Math.random() * 0.012 + 0.007,
+          flicker: Math.random() * Math.PI * 2,
+          flickerSpeed: Math.random() * 0.15 + 0.08,
+          wobbleFreq: Math.random() * 0.05 + 0.02
+        });
+      }
+    }
+
+    function spawnSmoke(fireBaseX, fireBaseY, currentIntensity) {
+      if (Math.random() < 0.35) {
+        state.smoke.push({
+          x: fireBaseX + (Math.random() - 0.5) * 20,
+          y: fireBaseY - 60 * currentIntensity,
+          vx: (Math.random() - 0.5) * 0.9 + (state.weather === 'wind' ? 3.0 : 0.2),
+          vy: -(Math.random() * 1.8 + 1.2),
+          radius: Math.random() * 18 + 15,
+          life: 1.0,
+          decay: Math.random() * 0.01 + 0.006,
+          growth: Math.random() * 0.4 + 0.3
+        });
+      }
+    }
+
+    /* ==========================================================================
+       5. Forest Night Background, Pine Trees & Campsite Ground
+       ========================================================================== */
+    function drawForestNight(fireBaseX, fireBaseY, flickerAlpha, timeNow) {
+      // 1. Deep Night Sky Gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#04060b');
+      skyGrad.addColorStop(0.55, '#080d19');
+      skyGrad.addColorStop(1, '#110b0e');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. Stars
+      state.stars.forEach(s => {
+        const twinkle = (Math.sin(timeNow * s.twinkleSpeed + s.phase) + 1) / 2;
+        ctx.fillStyle = `${s.color}${0.3 + twinkle * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 3. Crescent Moon with Soft Amber/Silver Corona
+      const moonX = width * 0.82;
+      const moonY = height * 0.18;
+      const moonGlow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, 80);
+      moonGlow.addColorStop(0, 'rgba(255, 248, 220, 0.4)');
+      moonGlow.addColorStop(1, 'rgba(255, 248, 220, 0)');
+      ctx.fillStyle = moonGlow;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, 80, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, 20, 0, Math.PI * 2);
+      ctx.fillStyle = '#fffdf0';
+      ctx.shadowColor = 'rgba(255, 245, 200, 0.9)';
+      ctx.shadowBlur = 18;
+      ctx.fill();
+
+      // Shadow mask for crescent
+      ctx.beginPath();
+      ctx.arc(moonX + 9, moonY - 4, 18, 0, Math.PI * 2);
+      ctx.fillStyle = '#050912';
+      ctx.fill();
+      ctx.restore();
+
+      // 4. Distant Pine Forest Silhouette
+      const treeBaseY = height * 0.72;
+      ctx.fillStyle = '#060a12';
+
+      const pines = [
+        { x: width * 0.08, h: 160, w: 45 },
+        { x: width * 0.16, h: 220, w: 55 },
+        { x: width * 0.24, h: 180, w: 48 },
+        { x: width * 0.76, h: 190, w: 52 },
+        { x: width * 0.84, h: 240, w: 60 },
+        { x: width * 0.92, h: 170, w: 46 }
+      ];
+
+      pines.forEach(p => {
+        ctx.beginPath();
+        ctx.moveTo(p.x, treeBaseY - p.h);
+        ctx.lineTo(p.x - p.w * 0.5, treeBaseY - p.h * 0.45);
+        ctx.lineTo(p.x - p.w * 0.3, treeBaseY - p.h * 0.45);
+        ctx.lineTo(p.x - p.w * 0.7, treeBaseY - p.h * 0.1);
+        ctx.lineTo(p.x - p.w * 0.4, treeBaseY - p.h * 0.1);
+        ctx.lineTo(p.x - p.w * 0.8, treeBaseY);
+        ctx.lineTo(p.x + p.w * 0.8, treeBaseY);
+        ctx.lineTo(p.x + p.w * 0.4, treeBaseY - p.h * 0.1);
+        ctx.lineTo(p.x + p.w * 0.7, treeBaseY - p.h * 0.1);
+        ctx.lineTo(p.x + p.w * 0.3, treeBaseY - p.h * 0.45);
+        ctx.lineTo(p.x + p.w * 0.5, treeBaseY - p.h * 0.45);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // 5. Campsite Ground Dirt & Grass
+      const groundGrad = ctx.createLinearGradient(0, height * 0.68, 0, height);
+      groundGrad.addColorStop(0, '#0d0a0b');
+      groundGrad.addColorStop(0.3, '#140c0b');
+      groundGrad.addColorStop(1, '#070404');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, height * 0.68, width, height * 0.32);
+
+      // 6. Dynamic Warm Campfire Ambient Glow on Ground & Surrounding Air
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const glowRadius = Math.min(width, height) * 0.65 * state.fireIntensity;
+      const fireGlow = ctx.createRadialGradient(
+        fireBaseX, fireBaseY, 20,
+        fireBaseX, fireBaseY, glowRadius
+      );
+      fireGlow.addColorStop(0, `rgba(251, 146, 60, ${0.45 * flickerAlpha})`);
+      fireGlow.addColorStop(0.35, `rgba(234, 88, 12, ${0.22 * flickerAlpha})`);
+      fireGlow.addColorStop(0.75, `rgba(180, 50, 10, ${0.08 * flickerAlpha})`);
+      fireGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = fireGlow;
+      ctx.beginPath();
+      ctx.ellipse(fireBaseX, fireBaseY + 20, glowRadius, glowRadius * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       6. Campfire Wood Logs & Hot Embers Base
+       ========================================================================== */
+    function drawCampfireLogs(fireBaseX, fireBaseY, flickerAlpha) {
+      // Circle of campfire boundary stones
+      ctx.fillStyle = '#1c1618';
+      const stoneCount = 14;
+      const stoneRadiusX = 90 * state.fireIntensity;
+      const stoneRadiusY = 32 * state.fireIntensity;
+
+      for (let i = 0; i < stoneCount; i++) {
+        const ang = (i / stoneCount) * Math.PI * 2;
+        const sx = fireBaseX + Math.cos(ang) * stoneRadiusX;
+        const sy = fireBaseY + Math.sin(ang) * stoneRadiusY + 10;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 14 * state.fireIntensity, 10 * state.fireIntensity, ang, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Crossed Wood Logs (Charred campfire timber)
+      ctx.save();
+      ctx.lineWidth = 16 * state.fireIntensity;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#231513';
+
+      // Log 1: Left to Right diagonal
+      ctx.beginPath();
+      ctx.moveTo(fireBaseX - 70 * state.fireIntensity, fireBaseY + 15);
+      ctx.lineTo(fireBaseX + 65 * state.fireIntensity, fireBaseY - 12);
+      ctx.stroke();
+
+      // Log 2: Right to Left diagonal
+      ctx.beginPath();
+      ctx.moveTo(fireBaseX + 70 * state.fireIntensity, fireBaseY + 15);
+      ctx.lineTo(fireBaseX - 65 * state.fireIntensity, fireBaseY - 10);
+      ctx.stroke();
+
+      // Log 3: Horizontal Base Log
+      ctx.lineWidth = 14 * state.fireIntensity;
+      ctx.strokeStyle = '#1c0f0e';
+      ctx.beginPath();
+      ctx.moveTo(fireBaseX - 55 * state.fireIntensity, fireBaseY + 8);
+      ctx.lineTo(fireBaseX + 55 * state.fireIntensity, fireBaseY + 8);
+      ctx.stroke();
+
+      // Blazing Red-Hot Charcoal & Coal Core
+      ctx.globalCompositeOperation = 'screen';
+      const coalGlow = ctx.createRadialGradient(
+        fireBaseX, fireBaseY, 5,
+        fireBaseX, fireBaseY, 55 * state.fireIntensity
+      );
+      coalGlow.addColorStop(0, `rgba(255, 250, 220, ${0.95 * flickerAlpha})`);
+      coalGlow.addColorStop(0.25, `rgba(255, 170, 50, ${0.85 * flickerAlpha})`);
+      coalGlow.addColorStop(0.65, `rgba(234, 60, 20, ${0.55 * flickerAlpha})`);
+      coalGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = coalGlow;
+      ctx.beginPath();
+      ctx.ellipse(fireBaseX, fireBaseY + 2, 60 * state.fireIntensity, 24 * state.fireIntensity, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       7. Roasting Marshmallow Feature (꼬치에 꽂힌 마시멜로)
+       ========================================================================== */
+    function drawMarshmallow(fireBaseX, fireBaseY) {
+      if (!state.marshmallowMode) return;
+
+      const stickStartX = width * 0.28;
+      const stickStartY = height * 0.95;
+      const marshX = fireBaseX - 15;
+      const marshY = fireBaseY - 95 * state.fireIntensity;
+
+      // Roasting Stick (Wooden skewer)
+      ctx.save();
+      ctx.strokeStyle = '#4a2e18';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(stickStartX, stickStartY);
+      ctx.lineTo(marshX, marshY);
+      ctx.stroke();
+
+      // Marshmallow Roasting Color Progression (Raw white -> Golden Brown -> Toasted Caramel)
+      state.marshmallowRoast = Math.min(1.0, state.marshmallowRoast + 0.0003 * state.fireIntensity);
+      const roast = state.marshmallowRoast;
+
+      const r = Math.round(255 - roast * 70);
+      const g = Math.round(250 - roast * 130);
+      const b = Math.round(240 - roast * 180);
+
+      // Marshmallow Cylinder
+      ctx.translate(marshX, marshY);
+      ctx.rotate(-0.35);
+
+      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.beginPath();
+      ctx.roundRect(-12, -18, 24, 36, 6);
+      ctx.fill();
+
+      // Caramelized Cracks / Toast marks
+      if (roast > 0.4) {
+        ctx.fillStyle = `rgba(80, 35, 10, ${roast * 0.6})`;
+        ctx.fillRect(-6, -8, 12, 4);
+        ctx.fillRect(-8, 4, 16, 5);
+      }
+
+      // Warm Firelight Reflection on Marshmallow
+      ctx.fillStyle = 'rgba(255, 190, 80, 0.45)';
+      ctx.fillRect(-12, 5, 24, 13);
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       8. Web Audio API Generative Procedural Campfire Audio Engine
+       (100% Client Synthesis: Campfire Crackle & Pop, Low Flame Drone, Night Crickets, Lofi Guitar)
+       ========================================================================== */
+    class CampfireAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.crackleGain = null;
+        this.guitarGain = null;
+        this.nightGain = null;
+        this.droneFilter = null;
+        this.crackleInterval = null;
+        this.guitarTimer = null;
+        this.isInitialized = false;
+
+        // Warm Campfire Lofi Chords (Frequencies in Hz): Cmaj7, Am7, Dm7, G7
+        this.chordProgressions = [
+          [130.81, 164.81, 196.00, 246.94], // Cmaj7 (C3, E3, G3, B3)
+          [110.00, 146.83, 174.61, 220.00], // Am7 (A2, D3, F3, A3)
+          [146.83, 174.61, 220.00, 261.63], // Dm7 (D3, F3, A3, C4)
+          [98.00, 146.83, 196.00, 246.94]   // G7 (G2, D3, G3, B3)
+        ];
+        this.currentChordIdx = 0;
+      }
+
+      init() {
+        if (this.isInitialized) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(state.masterGain, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+
+        // Crackle & Pop Gain
+        this.crackleGain = this.ctx.createGain();
+        this.crackleGain.gain.setValueAtTime(state.crackleEnabled ? 0.45 : 0, this.ctx.currentTime);
+        this.crackleGain.connect(this.masterGain);
+
+        // Acoustic Guitar Gain
+        this.guitarGain = this.ctx.createGain();
+        this.guitarGain.gain.setValueAtTime(state.guitarEnabled ? 0.32 : 0, this.ctx.currentTime);
+        this.guitarGain.connect(this.masterGain);
+
+        // Forest Night Gain
+        this.nightGain = this.ctx.createGain();
+        this.nightGain.gain.setValueAtTime(state.nightEnabled ? 0.35 : 0, this.ctx.currentTime);
+        this.nightGain.connect(this.masterGain);
+
+        this.startLowFlameDrone();
+        this.startCrackleLoop();
+        this.startGuitarLoop();
+        this.startNightCrickets();
+        this.isInitialized = true;
+      }
+
+      setMasterVolume(val) {
+        if (!this.ctx) return;
+        this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.05);
+      }
+
+      toggleCrackle(enabled) {
+        if (!this.ctx) return;
+        this.crackleGain.gain.setTargetAtTime(enabled ? 0.45 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      toggleGuitar(enabled) {
+        if (!this.ctx) return;
+        this.guitarGain.gain.setTargetAtTime(enabled ? 0.32 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      toggleNight(enabled) {
+        if (!this.ctx) return;
+        this.nightGain.gain.setTargetAtTime(enabled ? 0.35 : 0, this.ctx.currentTime, 0.1);
+      }
+
+      // Procedural Warm Flame Drone (Lowpass filtered pink rumble)
+      startLowFlameDrone() {
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.04;
+          b6 = white * 0.115926;
+        }
+
+        const source = this.ctx.createBufferSource();
+        source.buffer = noiseBuffer;
+        source.loop = true;
+
+        this.droneFilter = this.ctx.createBiquadFilter();
+        this.droneFilter.type = 'lowpass';
+        this.droneFilter.frequency.setValueAtTime(160, this.ctx.currentTime);
+
+        source.connect(this.droneFilter);
+        this.droneFilter.connect(this.crackleGain);
+        source.start();
+      }
+
+      // Procedural Wood Pops and Snaps (Sap Pockets Bursting)
+      playSinglePop(isLoud = false) {
+        if (!this.ctx || !state.audioActive || !state.crackleEnabled) return;
+        const now = this.ctx.currentTime;
+        const popDuration = Math.random() * 0.04 + 0.02;
+
+        const popBuffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * popDuration), this.ctx.sampleRate);
+        const data = popBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.3));
+        }
+
+        const popSource = this.ctx.createBufferSource();
+        popSource.buffer = popBuffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(Math.random() * 2200 + 800, now);
+        filter.Q.setValueAtTime(2.5, now);
+
+        const gain = this.ctx.createGain();
+        const popAmp = (isLoud ? 0.35 : 0.12) * state.fireIntensity;
+        gain.gain.setValueAtTime(popAmp, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + popDuration);
+
+        popSource.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.crackleGain);
+
+        popSource.start(now);
+      }
+
+      startCrackleLoop() {
+        const scheduleNextPop = () => {
+          if (!this.ctx || !state.audioActive) return;
+          this.playSinglePop(Math.random() < 0.18);
+          // Frequency scales with fire intensity
+          const delay = (Math.random() * 180 + 80) / Math.max(0.5, state.fireIntensity);
+          setTimeout(scheduleNextPop, delay);
+        };
+        scheduleNextPop();
+      }
+
+      // Procedural Acoustic Fingerpicking Lofi Chords
+      startGuitarLoop() {
+        const playArpeggio = () => {
+          if (!this.ctx || !state.audioActive) return;
+          if (state.guitarEnabled) {
+            const chord = this.chordProgressions[this.currentChordIdx];
+            this.currentChordIdx = (this.currentChordIdx + 1) % this.chordProgressions.length;
+            const now = this.ctx.currentTime;
+
+            chord.forEach((freq, i) => {
+              const noteTime = now + i * 0.42;
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              const filter = this.ctx.createBiquadFilter();
+
+              osc.type = 'triangle'; // Warm acoustic body tone
+              osc.frequency.setValueAtTime(freq, noteTime);
+
+              filter.type = 'lowpass';
+              filter.frequency.setValueAtTime(950, noteTime);
+
+              gain.gain.setValueAtTime(0, noteTime);
+              gain.gain.linearRampToValueAtTime(0.09, noteTime + 0.03); // Finger pluck
+              gain.gain.exponentialRampToValueAtTime(0.0001, noteTime + 2.8); // Long acoustic sustain
+
+              osc.connect(filter);
+              filter.connect(gain);
+              gain.connect(this.guitarGain);
+
+              osc.start(noteTime);
+              osc.stop(noteTime + 3.0);
+            });
+          }
+
+          this.guitarTimer = setTimeout(playArpeggio, 4800);
+        };
+
+        playArpeggio();
+      }
+
+      // Procedural Night Crickets
+      startNightCrickets() {
+        const chirpCricket = () => {
+          if (!this.ctx || !state.audioActive) return;
+          if (state.nightEnabled && state.weather !== 'rain') {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(4600 + Math.random() * 300, now);
+
+            // Double chirp burst
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.02, now + 0.02);
+            gain.gain.linearRampToValueAtTime(0, now + 0.06);
+            gain.gain.linearRampToValueAtTime(0.02, now + 0.08);
+            gain.gain.linearRampToValueAtTime(0, now + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.nightGain);
+
+            osc.start(now);
+            osc.stop(now + 0.15);
+          }
+          setTimeout(chirpCricket, Math.random() * 1500 + 1200);
+        };
+
+        chirpCricket();
+      }
+    }
+
+    const soundEngine = new CampfireAudioEngine();
+
+    /* ==========================================================================
+       9. Main Animation Loop (60-144 FPS)
+       ========================================================================== */
+    function render(currentTime) {
+      const dt = (currentTime - state.lastTimestamp) / 1000;
+      state.lastTimestamp = currentTime;
+
+      // Smooth intensity interpolation & wood heat boost decay
+      if (state.woodHeatBoost > 0) {
+        state.woodHeatBoost = Math.max(0, state.woodHeatBoost - dt * 0.25);
+      }
+      const effectiveIntensity = state.fireIntensity + state.woodHeatBoost;
+
+      // Update Digital Clock
+      const now = new Date();
+      timeDisplay.innerText = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      // Campfire position (bottom center)
+      const fireBaseX = width * 0.5;
+      const fireBaseY = height * 0.74;
+
+      // Flame flicker factor
+      const flicker = (Math.sin(currentTime * 0.012) * 0.08 + Math.cos(currentTime * 0.023) * 0.06 + 0.88);
+
+      // 1. Draw Forest Clearing, Moon & Ambient Ground
+      drawForestNight(fireBaseX, fireBaseY, flicker, currentTime);
+
+      // 2. Weather Particles (Rain / Shooting Stars)
+      if (state.weather === 'rain') {
+        ctx.strokeStyle = 'rgba(180, 215, 255, 0.4)';
+        ctx.lineWidth = 1.2;
+        state.rainDrops.forEach(drop => {
+          ctx.beginPath();
+          ctx.moveTo(drop.x, drop.y);
+          ctx.lineTo(drop.x - 2, drop.y + drop.length);
+          ctx.stroke();
+
+          drop.y += drop.speed;
+          drop.x -= 1.0;
+          if (drop.y > height) {
+            drop.y = -drop.length;
+            drop.x = Math.random() * width + 30;
+          }
+        });
+      }
+
+      if (Math.random() < 0.015) {
+        addShootingStar();
+      }
+      for (let i = state.shootingStars.length - 1; i >= 0; i--) {
+        const star = state.shootingStars[i];
+        star.x += star.dx;
+        star.y += star.dy;
+        star.life -= star.decay;
+        if (star.life <= 0) {
+          state.shootingStars.splice(i, 1);
+        } else {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${star.life})`;
+          ctx.lineWidth = 2 * star.life;
+          ctx.beginPath();
+          ctx.moveTo(star.x, star.y);
+          ctx.lineTo(star.x - star.dx * 3, star.y - star.dy * 3);
+          ctx.stroke();
+        }
+      }
+
+      // 3. Smoke Particles rising from campfire
+      spawnSmoke(fireBaseX, fireBaseY, effectiveIntensity);
+      for (let sIdx = state.smoke.length - 1; sIdx >= 0; sIdx--) {
+        const smk = state.smoke[sIdx];
+        smk.x += smk.vx;
+        smk.y += smk.vy;
+        smk.radius += smk.growth;
+        smk.life -= smk.decay;
+
+        if (smk.life <= 0) {
+          state.smoke.splice(sIdx, 1);
+        } else {
+          const alpha = smk.life * 0.12;
+          ctx.fillStyle = `rgba(160, 150, 150, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(smk.x, smk.y, smk.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 4. Campfire Wood Logs & Charcoal Core
+      drawCampfireLogs(fireBaseX, fireBaseY, flicker);
+
+      // 5. Turbulent Flame Particles (Add blend mode for brilliant fire illumination)
+      spawnFlameTongue(fireBaseX, fireBaseY, effectiveIntensity);
+      spawnFlameTongue(fireBaseX, fireBaseY, effectiveIntensity);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+
+      for (let pIdx = state.particles.length - 1; pIdx >= 0; pIdx--) {
+        const p = state.particles[pIdx];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.radius = Math.max(0, p.radius - 0.45);
+        p.life -= p.decay;
+
+        if (p.life <= 0 || p.radius <= 0) {
+          state.particles.splice(pIdx, 1);
+        } else {
+          // Color transition: White -> Yellow -> Orange -> Crimson -> Smoke
+          let r = 255, g = 255, b = 255;
+          if (p.life > 0.7) {
+            // White-hot flame center
+            r = 255; g = Math.round(200 + p.life * 55); b = Math.round(100 * (p.life - 0.7));
+          } else if (p.life > 0.35) {
+            // Golden orange flame body
+            r = 255; g = Math.round(80 + (p.life - 0.35) * 340); b = 20;
+          } else {
+            // Deep red/amber flame tips
+            r = Math.round(180 + p.life * 210); g = Math.round(p.life * 180); b = 10;
+          }
+
+          const alpha = p.life * 0.65;
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+
+      // 6. Glowing Embers & Sparks flying into the sky
+      if (Math.random() < 0.45 * effectiveIntensity) {
+        spawnEmber(fireBaseX, fireBaseY, 1);
+      }
+
+      for (let eIdx = state.embers.length - 1; eIdx >= 0; eIdx--) {
+        const emb = state.embers[eIdx];
+        emb.flicker += emb.flickerSpeed;
+        emb.x += emb.vx + Math.sin(currentTime * emb.wobbleFreq) * 0.6;
+        emb.y += emb.vy;
+        emb.life -= emb.decay;
+
+        if (emb.life <= 0 || emb.y < -20) {
+          state.embers.splice(eIdx, 1);
+        } else {
+          const embAlpha = Math.max(0, emb.life * (Math.sin(emb.flicker) * 0.35 + 0.65));
+          ctx.fillStyle = `rgba(255, ${Math.round(140 + emb.life * 100)}, 40, ${embAlpha})`;
+          ctx.shadowColor = 'rgba(255, 160, 40, 0.9)';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(emb.x, emb.y, emb.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      // 7. Roasting Marshmallow
+      drawMarshmallow(fireBaseX, fireBaseY);
+
+      requestAnimationFrame(render);
+    }
+
+    /* ==========================================================================
+       10. Interactive Events (Add Wood, Poke Fire, Mouse Drag)
+       ========================================================================== */
+    // Add Wood Action
+    function addWood() {
+      state.woodHeatBoost = 0.55;
+      const fireBaseX = width * 0.5;
+      const fireBaseY = height * 0.74;
+
+      // Burst of embers
+      spawnEmber(fireBaseX, fireBaseY, 35, true);
+      soundEngine.playSinglePop(true);
+      setTimeout(() => soundEngine.playSinglePop(true), 120);
+
+      showToast('🪵 장작을 추가했습니다! 불꽃과 불티가 솟아오릅니다');
+    }
+    btnAddWood.addEventListener('click', addWood);
+
+    // Poke Fire Action
+    function pokeFire() {
+      const fireBaseX = width * 0.5;
+      const fireBaseY = height * 0.74;
+
+      spawnEmber(fireBaseX, fireBaseY, 40, true);
+      soundEngine.playSinglePop(true);
+      showToast('🪄 불씨를 쑤셔 불티를 피워 올렸습니다');
+    }
+    btnPokeFire.addEventListener('click', pokeFire);
+
+    // Drag / Touch on Canvas to Stir Embers
+    canvas.addEventListener('mousedown', (e) => {
+      state.mouse.isDown = true;
+      const fireBaseX = width * 0.5;
+      const fireBaseY = height * 0.74;
+      spawnEmber(fireBaseX, fireBaseY, 12, true);
+      soundEngine.playSinglePop(false);
+    });
+
+    window.addEventListener('mouseup', () => {
+      state.mouse.isDown = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      state.mouse.x = e.clientX;
+      state.mouse.y = e.clientY;
+      if (state.mouse.isDown) {
+        const fireBaseX = width * 0.5;
+        const fireBaseY = height * 0.74;
+        spawnEmber(fireBaseX, fireBaseY, 4, false);
+      }
+    });
+
+    // Fire Intensity Slider
+    fireIntensitySlider.addEventListener('input', (e) => {
+      state.fireIntensity = parseFloat(e.target.value);
+      if (state.fireIntensity < 0.7) {
+        fireStatusText.innerText = '은은하게 일렁이는 잔불 모드';
+      } else if (state.fireIntensity > 1.4) {
+        fireStatusText.innerText = '활활 타오르는 대형 모닥불';
+      } else {
+        fireStatusText.innerText = '타닥타닥 모닥불이 타오르는 중';
+      }
+    });
+
+    // Weather Buttons
+    btnWeatherNight.addEventListener('click', () => {
+      state.weather = 'night';
+      btnWeatherNight.classList.add('active');
+      btnWeatherRain.classList.remove('active');
+      btnWeatherWind.classList.remove('active');
+      showToast('🌌 맑고 고요한 밤하늘');
+    });
+
+    btnWeatherRain.addEventListener('click', () => {
+      state.weather = 'rain';
+      btnWeatherRain.classList.add('active');
+      btnWeatherNight.classList.remove('active');
+      btnWeatherWind.classList.remove('active');
+      showToast('🌧️ 타닥거리는 장작 위로 내리는 촉촉한 밤비');
+    });
+
+    btnWeatherWind.addEventListener('click', () => {
+      state.weather = 'wind';
+      btnWeatherWind.classList.add('active');
+      btnWeatherNight.classList.remove('active');
+      btnWeatherRain.classList.remove('active');
+      showToast('💨 불티가 춤추며 날아가는 거센 산바람');
+    });
+
+    // Marshmallow Toggle
+    function toggleMarshmallow() {
+      state.marshmallowMode = !state.marshmallowMode;
+      btnMarshmallow.classList.toggle('active', state.marshmallowMode);
+      showToast(state.marshmallowMode ? '🍢 마시멜로 굽기 모드 시작' : '마시멜로 굽기 종료');
+    }
+    btnMarshmallow.addEventListener('click', toggleMarshmallow);
+
+    // Audio Master Toggle
+    function toggleSoundMaster() {
+      if (!state.audioActive) {
+        soundEngine.init();
+        state.audioActive = true;
+        soundIcon.innerText = '🔊';
+        btnSoundMaster.classList.add('active');
+        soundEngine.setMasterVolume(state.masterGain);
+        showToast('🔊 모닥불 사운드스케이프 재생 시작');
+      } else {
+        state.audioActive = false;
+        soundIcon.innerText = '🔇';
+        btnSoundMaster.classList.remove('active');
+        soundEngine.setMasterVolume(0);
+        showToast('🔇 사운드 음소거');
+      }
+    }
+    btnSoundMaster.addEventListener('click', toggleSoundMaster);
+
+    btnToggleCrackle.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.crackleEnabled = !state.crackleEnabled;
+      btnToggleCrackle.classList.toggle('active', state.crackleEnabled);
+      soundEngine.toggleCrackle(state.crackleEnabled);
+    });
+
+    btnToggleGuitar.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.guitarEnabled = !state.guitarEnabled;
+      btnToggleGuitar.classList.toggle('active', state.guitarEnabled);
+      soundEngine.toggleGuitar(state.guitarEnabled);
+    });
+
+    btnToggleNight.addEventListener('click', () => {
+      if (!state.audioActive) toggleSoundMaster();
+      state.nightEnabled = !state.nightEnabled;
+      btnToggleNight.classList.toggle('active', state.nightEnabled);
+      soundEngine.toggleNight(state.nightEnabled);
+    });
+
+    masterVolumeSlider.addEventListener('input', (e) => {
+      state.masterGain = parseFloat(e.target.value);
+      if (state.audioActive) {
+        soundEngine.setMasterVolume(state.masterGain);
+      }
+    });
+
+    // Zen Mode & Fullscreen
+    function toggleZenMode() {
+      state.zenMode = !state.zenMode;
+      document.body.classList.toggle('zen-mode', state.zenMode);
+      showToast(state.zenMode ? '👁️ 감상 모드 (단축키 [H]로 다시 표시)' : '기본 모드로 복귀');
+    }
+    btnZenMode.addEventListener('click', toggleZenMode);
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'h' || e.key === 'H') {
+        toggleZenMode();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleMarshmallow();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        toggleSoundMaster();
+      }
+    });
+
+    // Initialize
+    resizeCanvas();
+    requestAnimationFrame(render);
+    showToast('🔥 고요한 밤의 모닥불이 피어올랐습니다. [Space]키로 사운드를 켜보세요.');
+  </script>
+</body>
+</html>

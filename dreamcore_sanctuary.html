@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DREAMCORE // 기억의 잔상 (Melancholic Ethereal Liminality)</title>
+  <style>
+    :root {
+      --dust-violet: #8e7cc3;
+      --ash-rose: #d5a6bd;
+      --cold-blue: #769fcd;
+      --amber-lamp: #f6c88f;
+      --bg-dark: #0a0b12;
+      --neon-cyan: #70c1b3;
+      --cinema-red: #c94b4b;
+      --snow-blue: #a0c6e8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      color: #fff;
+    }
+
+    #stage-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    canvas#dreamCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Melancholic Rain & Film Grain Atmosphere */
+    #vignette-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+      box-shadow: inset 0 0 160px rgba(5, 6, 12, 0.85);
+      background: radial-gradient(circle, transparent 40%, rgba(10, 12, 22, 0.5) 100%);
+    }
+
+    #film-grain {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+      background: linear-gradient(rgba(18, 16, 24, 0) 50%, rgba(0, 0, 0, 0.35) 50%);
+      background-size: 100% 3px;
+      opacity: 0.35;
+    }
+
+    /* Top Left Melancholic HUD */
+    #dream-hud {
+      position: absolute;
+      top: 28px;
+      left: 34px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .dream-title {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #d5a6bd, #b4a7d6, #8e7cc3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 14px rgba(180, 167, 214, 0.4));
+    }
+
+    .dream-timestamp {
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      color: rgba(255, 255, 255, 0.7);
+      text-shadow: 0 0 10px rgba(213, 166, 189, 0.6);
+    }
+
+    .track-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(22, 24, 38, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 15px;
+      border-radius: 18px;
+      margin-top: 4px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
+    }
+
+    .track-badge .lamp-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--amber-lamp);
+      box-shadow: 0 0 10px var(--amber-lamp);
+      animation: pulseLamp 2.4s infinite ease-in-out;
+    }
+
+    @keyframes pulseLamp {
+      0%, 100% { opacity: 0.5; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    #track-name {
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 0.6px;
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .billboard-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--neon-cyan);
+      background: rgba(112, 193, 179, 0.12);
+      border: 1px solid rgba(112, 193, 179, 0.35);
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-top: 3px;
+      width: fit-content;
+      backdrop-filter: blur(8px);
+    }
+
+    .liminal-quote {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.75);
+      margin-top: 5px;
+      letter-spacing: 0.8px;
+      text-shadow: 0 1px 8px rgba(0,0,0,0.7);
+      transition: opacity 1s ease;
+    }
+
+    /* Top Right Controls */
+    #top-right-tools {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-btn {
+      background: rgba(20, 22, 34, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: rgba(255, 255, 255, 0.9);
+      padding: 8px 15px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-btn:hover {
+      background: rgba(213, 166, 189, 0.2);
+      border-color: rgba(213, 166, 189, 0.45);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .hud-btn.active {
+      background: rgba(142, 124, 195, 0.3);
+      border-color: rgba(180, 167, 214, 0.6);
+      box-shadow: 0 0 16px rgba(180, 167, 214, 0.35);
+    }
+
+    /* Playlist Drawer */
+    #playlist-drawer {
+      position: absolute;
+      top: 0;
+      right: -360px;
+      width: 350px;
+      height: 100%;
+      background: rgba(16, 17, 28, 0.94);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 25;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: -15px 0 45px rgba(0, 0, 0, 0.7);
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #playlist-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+
+    .drawer-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--ash-rose);
+      text-transform: uppercase;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .close-btn:hover { color: #fff; }
+
+    #track-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #track-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    #track-list::-webkit-scrollbar-thumb {
+      background: rgba(213, 166, 189, 0.3);
+      border-radius: 2px;
+    }
+
+    .playlist-item {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .playlist-item:hover {
+      background: rgba(213, 166, 189, 0.16);
+      border-color: rgba(213, 166, 189, 0.35);
+      transform: translateX(3px);
+    }
+
+    .playlist-item.active {
+      background: linear-gradient(90deg, rgba(213, 166, 189, 0.25), rgba(142, 124, 195, 0.2));
+      border-color: rgba(213, 166, 189, 0.5);
+      box-shadow: 0 0 14px rgba(213, 166, 189, 0.25);
+    }
+
+    .item-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+
+    .item-meta {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .drop-zone {
+      border: 1px dashed rgba(213, 166, 189, 0.4);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(213, 166, 189, 0.04);
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone:hover {
+      background: rgba(213, 166, 189, 0.1);
+      border-color: var(--ash-rose);
+    }
+
+    .drop-zone-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.5;
+    }
+
+    /* Floating Bottom Dock Control Panel */
+    #ui-dock {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(96%, 1060px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-deck {
+      background: rgba(18, 19, 32, 0.65);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 13px 22px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .time-lbl {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.65);
+      font-variant-numeric: tabular-nums;
+      min-width: 40px;
+    }
+
+    input[type="range"]#trackSlider {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]#trackSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--ash-rose);
+      box-shadow: 0 0 10px var(--ash-rose);
+      cursor: pointer;
+    }
+
+    .deck-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.88);
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 400;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, rgba(213, 166, 189, 0.35), rgba(142, 124, 195, 0.35));
+      border-color: rgba(213, 166, 189, 0.55);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(213, 166, 189, 0.35);
+    }
+
+    .vol-slider {
+      -webkit-appearance: none;
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.22);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--ash-rose);
+      cursor: pointer;
+    }
+
+    /* Zen Mode State */
+    body.zen-mode #ui-dock {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 35px);
+    }
+
+    body.zen-mode #dream-hud {
+      opacity: 0.22;
+      transform: translateY(-6px);
+    }
+
+    body.zen-mode #dream-hud:hover {
+      opacity: 0.95;
+    }
+
+    #tip-bar {
+      position: absolute;
+      bottom: 8px;
+      right: 18px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(20, 22, 34, 0.9);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--ash-rose);
+      color: #fce7f3;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      letter-spacing: 0.6px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    input[type="file"]#fileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden Media Player for Synchronized Audio & Canvas Video Billboard/Cinema Screen -->
+  <video id="mediaPlayer" playsinline crossorigin="anonymous" style="display:none;" loop></video>
+
+  <!-- Canvas Stage (Surreal Landscapes & Atmospheric Cinema) -->
+  <div id="stage-container">
+    <canvas id="dreamCanvas"></canvas>
+  </div>
+
+  <div id="vignette-overlay"></div>
+  <div id="film-grain"></div>
+
+  <!-- Top Left Melancholic HUD & Quotes -->
+  <div id="dream-hud">
+    <div class="dream-title">DREAMCORE // 記憶의 残像</div>
+    <div class="dream-timestamp" id="vhs-timestamp">SEP 14 1997 05:42:18 PM</div>
+    <div class="track-badge">
+      <div class="lamp-dot"></div>
+      <span id="track-name">I WISH YOU WERE STILL HERE (1997 MEMORY)</span>
+    </div>
+    <div class="billboard-badge" id="billboardStatus">
+      <span>📺 전광판: 몽환 루프 (내 영상 대기 중)</span>
+    </div>
+    <div class="liminal-quote" id="liminalQuote">"우리는 언젠가 다시 만날 수 있을까요."</div>
+  </div>
+
+  <!-- Top Right Navigation Tools -->
+  <div id="top-right-tools">
+    <button class="hud-btn" id="btnLoadVideo" style="border-color: rgba(112, 193, 179, 0.45); color: var(--neon-cyan);" title="내 동영상 파일(MP4, WebM) 불러와 스크린에 띄우기 (단축키: V)">
+      📹 영상 불러오기
+    </button>
+    <a href="epic_hopes_and_dreams.html" class="hud-btn" style="text-decoration:none; color: var(--amber-lamp); border-color: rgba(246, 200, 143, 0.4);" title="희망차고 웅장한 Hopes & Dreams 모드로 이동">
+      🌟 희망과 꿈
+    </a>
+    <button class="hud-btn" id="btnTogglePlaylist" title="트랙 목록 및 내 파일 불러오기 (단축키: P)">
+      📑 트랙 모음 (<span id="track-count">3</span>)
+    </button>
+    <button class="hud-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
+      👁️
+    </button>
+    <button class="hud-btn" id="btnFullscreen" title="전체화면 (단축키: F)">
+      ⛶
+    </button>
+  </div>
+
+  <!-- Playlist & Music/Video Importer Drawer -->
+  <div id="playlist-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">LOST MEMORIES & VIDEOS</div>
+      <button class="close-btn" id="btnClosePlaylist">&times;</button>
+    </div>
+
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone">
+      <div style="font-size: 24px; margin-bottom: 6px;">📹 🌧️ ❄️</div>
+      <div class="drop-zone-text">
+        <strong style="color: var(--neon-cyan);">내 동영상 / 음악 파일 불러오기</strong><br>
+        MP4, WebM, MOV, MP3, WAV 드래그 또는 클릭<br>
+        <span style="font-size: 10px; color: rgba(255,255,255,0.5);">* 동영상을 넣으면 배경 전광판 및 스크린에서 실시간 상영됩니다.</span>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/*,audio/*,.mp4,.webm,.mkv,.mov,.mp3,.wav,.flac" multiple>
+
+    <!-- Playlist Tracks -->
+    <div id="track-list"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">알림</div>
+
+  <!-- Floating Bottom Controls -->
+  <div id="ui-dock">
+    <div class="glass-deck">
+      <!-- Progress Bar -->
+      <div class="progress-row">
+        <span class="time-lbl" id="curTime">00:00</span>
+        <input type="range" id="trackSlider" min="0" max="100" value="0" step="0.1">
+        <span class="time-lbl" id="durTime">00:00</span>
+      </div>
+
+      <div class="deck-row">
+        <!-- Play / Prev / Next -->
+        <div class="controls-group">
+          <button class="pill-btn" id="btnPrev">⏮️ 이전</button>
+          <button class="pill-btn" id="btnPlayPause" style="min-width: 78px; color: var(--ash-rose);">▶ 재생</button>
+          <button class="pill-btn" id="btnNext">다음 ⏭️</button>
+          <button class="pill-btn active" id="btnLoop" title="한 곡 반복">🔁</button>
+        </div>
+
+        <!-- Melancholic Dreamcore & Cinema & Snow Scenes -->
+        <div class="controls-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;">풍경:</span>
+          <button class="pill-btn active" id="sceneSeaRails">🌊 바다 철길</button>
+          <button class="pill-btn" id="sceneTelephone">🚏 황혼 전신주</button>
+          <button class="pill-btn" id="scenePlatform">🍂 안개 간이역</button>
+          <button class="pill-btn" id="sceneTheater" style="border-color: rgba(201, 75, 75, 0.45); color: #fca5a5;">🎬 심야 영화관</button>
+          <button class="pill-btn" id="sceneSnowRoad" style="border-color: rgba(160, 198, 232, 0.45); color: var(--snow-blue);">❄️ 눈 내리는 숲길</button>
+        </div>
+
+        <!-- Tone & Weather Shifters -->
+        <div class="controls-group">
+          <button class="pill-btn active" id="btnSlowedReverb" title="기억 속 공간처럼 아득한 슬로우드 + 대성당 리버브">🌙 SLOWED</button>
+          <button class="pill-btn active" id="btnRainSound" title="창가에 내리는 촉촉한 빗소리 / 눈보라 바람소리">🌧️ 날씨 소리</button>
+          <button class="pill-btn active" id="btnTapeHiss" title="90년대 카세트 테이프 히스 & 비닐 소음">📻 테이프 잡음</button>
+        </div>
+
+        <!-- Volume -->
+        <div class="controls-group" style="align-items: center; gap: 6px;">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.6);">VOL</span>
+          <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="0.7">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tip-bar">단축키: [Space] 재생/정지 · [V] 영상 불러오기 · [1~5] 풍경 전환(5: 눈 내리는 숲길) · [H] UI 숨김 · [P] 트랙 목록 · [F] 전체화면</div>
+
+  <script>
+    /* ==========================================================================
+       1. Global State & Melancholic Quotes
+       ========================================================================== */
+    const state = {
+      scene: 'seaRails', // 'seaRails', 'telephone', 'platform', 'theater', 'snowRoad'
+      zenMode: false,
+      isPlaying: false,
+      isLooping: true,
+      currentTrackIdx: 0,
+      slowedReverb: true,
+      rainEnabled: true,
+      tapeHissEnabled: true,
+      masterVolume: 0.7,
+      hasUserVideo: false,
+      rainDrops: [],
+      mistDust: [],
+      snowFlakes: [],
+      ambientEchoTimer: null
+    };
+
+    const melancholicQuotes = [
+      "우리는 언젠가 다시 만날 수 있을까요.",
+      "모든 것이 지나간 자리, 기억만이 남아 파도칩니다.",
+      "시간이 멈춘 이 자리에서, 너를 조용히 기다려.",
+      "돌아갈 수 없는 날들의 가장 아름다웠던 빛.",
+      "괜찮아, 조금 슬퍼해도 괜찮아.",
+      "잊혀진 계절의 향기가 바람에 실려옵니다.",
+      "꿈에서 깨어나도, 이 바다는 여전히 그대로겠지.",
+      "텅 빈 심야의 영화관, 오직 우리 둘만의 기억이 상영됩니다.",
+      "눈 내리는 새벽 숲길, 고요함 속에 발자국만이 남겨집니다."
+    ];
+    let quoteIndex = 0;
+    const liminalQuoteEl = document.getElementById('liminalQuote');
+    setInterval(() => {
+      quoteIndex = (quoteIndex + 1) % melancholicQuotes.length;
+      liminalQuoteEl.style.opacity = 0;
+      setTimeout(() => {
+        liminalQuoteEl.innerText = `"${melancholicQuotes[quoteIndex]}"`;
+        liminalQuoteEl.style.opacity = 1;
+      }, 900);
+    }, 17000);
+
+    // DOM Elements
+    const canvas = document.getElementById('dreamCanvas');
+    const ctx = canvas.getContext('2d');
+    const mediaPlayer = document.getElementById('mediaPlayer');
+    const trackNameEl = document.getElementById('track-name');
+    const trackCountEl = document.getElementById('track-count');
+    const curTimeEl = document.getElementById('curTime');
+    const durTimeEl = document.getElementById('durTime');
+    const trackSlider = document.getElementById('trackSlider');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnLoop = document.getElementById('btnLoop');
+    const btnSlowedReverb = document.getElementById('btnSlowedReverb');
+    const btnRainSound = document.getElementById('btnRainSound');
+    const btnTapeHiss = document.getElementById('btnTapeHiss');
+    const volSlider = document.getElementById('volSlider');
+    const btnTogglePlaylist = document.getElementById('btnTogglePlaylist');
+    const btnClosePlaylist = document.getElementById('btnClosePlaylist');
+    const playlistDrawer = document.getElementById('playlist-drawer');
+    const trackListEl = document.getElementById('track-list');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const toast = document.getElementById('toast');
+    const btnZenMode = document.getElementById('btnZenMode');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const vhsTimestamp = document.getElementById('vhs-timestamp');
+    const btnLoadVideo = document.getElementById('btnLoadVideo');
+    const billboardStatus = document.getElementById('billboardStatus');
+
+    const sceneButtons = {
+      seaRails: document.getElementById('sceneSeaRails'),
+      telephone: document.getElementById('sceneTelephone'),
+      platform: document.getElementById('scenePlatform'),
+      theater: document.getElementById('sceneTheater'),
+      snowRoad: document.getElementById('sceneSnowRoad')
+    };
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+    }
+
+    // 1997 VHS OSD Clock
+    function updateTimestamp() {
+      const now = new Date();
+      const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const m = monthNames[now.getMonth()];
+      const d = String(now.getDate()).padStart(2, '0');
+      const h = String(now.getHours() % 12 || 12).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+      vhsTimestamp.innerText = `${m} ${d} 1997 ${h}:${min}:${s} ${ampm}`;
+    }
+    setInterval(updateTimestamp, 1000);
+    updateTimestamp();
+
+    /* ==========================================================================
+       2. Web Audio API Melancholic Dream Synthesizer & Slowed Reverb Deck
+       ========================================================================== */
+    class MelancholicAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.analyser = null;
+        this.mediaEl = mediaPlayer;
+
+        this.convolver = null;
+        this.dryGain = null;
+        this.wetGain = null;
+        this.rainGain = null;
+        this.rainFilter = null;
+        this.tapeGain = null;
+        this.masterGain = null;
+
+        this.isSynthPlaying = false;
+        this.synthTimer = null;
+        this.synthStep = 0;
+        this.isInitialized = false;
+
+        this.sadChords = [
+          [146.83, 174.61, 220.00, 261.63, 329.63], // Dm9
+          [116.54, 146.83, 174.61, 220.00],         // Bbmaj7
+          [87.31, 130.81, 164.81, 220.00],          // Fmaj7
+          [130.81, 196.00, 261.63, 293.66]          // Csus4/C
+        ];
+        this.sadMelodyNotes = [440.00, 392.00, 349.23, 329.63, 293.66, 261.63, 220.00];
+
+        this.mediaEl.addEventListener('ended', () => {
+          if (state.isLooping) {
+            this.mediaEl.currentTime = 0;
+            this.mediaEl.play().catch(() => {});
+          } else {
+            playNextTrack();
+          }
+        });
+
+        this.mediaEl.addEventListener('timeupdate', () => {
+          if (!this.isSynthPlaying && this.mediaEl.duration) {
+            trackSlider.value = (this.mediaEl.currentTime / this.mediaEl.duration) * 100;
+            curTimeEl.innerText = formatTime(this.mediaEl.currentTime);
+            durTimeEl.innerText = formatTime(this.mediaEl.duration);
+          }
+        });
+
+        this.mediaEl.addEventListener('loadeddata', () => {
+          if (this.mediaEl.videoWidth > 0) {
+            state.hasUserVideo = true;
+            billboardStatus.innerHTML = '<span>📺 스크린: 내 영상 동기화 상영 중</span>';
+            billboardStatus.style.color = '#70c1b3';
+          }
+        });
+      }
+
+      init() {
+        if (this.isInitialized) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.88;
+
+        this.convolver = this.createPlateReverb(5.2, 1.4);
+        this.dryGain = this.ctx.createGain();
+        this.wetGain = this.ctx.createGain();
+        this.wetGain.gain.setValueAtTime(state.slowedReverb ? 0.72 : 0.15, this.ctx.currentTime);
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(state.masterVolume, this.ctx.currentTime);
+
+        this.rainGain = this.ctx.createGain();
+        this.rainGain.gain.setValueAtTime(state.rainEnabled ? 0.22 : 0, this.ctx.currentTime);
+        this.startRainSynth();
+
+        this.tapeGain = this.ctx.createGain();
+        this.tapeGain.gain.setValueAtTime(state.tapeHissEnabled ? 0.14 : 0, this.ctx.currentTime);
+        this.startTapeHissSynth();
+
+        const source = this.ctx.createMediaElementSource(this.mediaEl);
+        source.connect(this.dryGain);
+        source.connect(this.convolver);
+        this.convolver.connect(this.wetGain);
+
+        this.dryGain.connect(this.masterGain);
+        this.wetGain.connect(this.masterGain);
+
+        this.masterGain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        this.isInitialized = true;
+      }
+
+      createPlateReverb(duration, decay) {
+        const rate = this.ctx.sampleRate;
+        const length = rate * duration;
+        const impulse = this.ctx.createBuffer(2, length, rate);
+        const left = impulse.getChannelData(0);
+        const right = impulse.getChannelData(1);
+
+        for (let i = 0; i < length; i++) {
+          const n = i / length;
+          const env = Math.pow(1 - n, decay);
+          left[i] = (Math.random() * 2 - 1) * env;
+          right[i] = (Math.random() * 2 - 1) * env;
+        }
+
+        const conv = this.ctx.createConvolver();
+        conv.buffer = impulse;
+        return conv;
+      }
+
+      startRainSynth() {
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99765 * b0 + white * 0.0555179;
+          b1 = 0.96300 * b1 + white * 0.1538520;
+          b2 = 0.57000 * b2 + white * 0.5329522;
+          data[i] = (b0 + b1 + b2) * 0.035;
+        }
+
+        const source = this.ctx.createBufferSource();
+        source.buffer = noiseBuf;
+        source.loop = true;
+
+        this.rainFilter = this.ctx.createBiquadFilter();
+        this.rainFilter.type = 'lowpass';
+        this.rainFilter.frequency.setValueAtTime(state.scene === 'snowRoad' ? 700 : 1250, this.ctx.currentTime);
+
+        source.connect(this.rainFilter);
+        this.rainFilter.connect(this.rainGain);
+        this.rainGain.connect(this.masterGain);
+        source.start();
+      }
+
+      startTapeHissSynth() {
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.012;
+        }
+
+        const source = this.ctx.createBufferSource();
+        source.buffer = noiseBuf;
+        source.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2800, this.ctx.currentTime);
+        filter.Q.setValueAtTime(1.5, this.ctx.currentTime);
+
+        source.connect(filter);
+        filter.connect(this.tapeGain);
+        this.tapeGain.connect(this.masterGain);
+        source.start();
+      }
+
+      updateFX() {
+        if (!this.isInitialized) return;
+        const now = this.ctx.currentTime;
+        this.wetGain.gain.setTargetAtTime(state.slowedReverb ? 0.72 : 0.15, now, 0.1);
+        this.rainGain.gain.setTargetAtTime(state.rainEnabled ? 0.22 : 0, now, 0.1);
+        if (this.rainFilter) {
+          // If in snowRoad, softer deeper winter blizzard whisper
+          this.rainFilter.frequency.setTargetAtTime(state.scene === 'snowRoad' ? 650 : 1250, now, 0.2);
+        }
+        this.tapeGain.gain.setTargetAtTime(state.tapeHissEnabled ? 0.14 : 0, now, 0.1);
+        this.mediaEl.playbackRate = state.slowedReverb ? 0.84 : 1.0;
+      }
+
+      setVolume(val) {
+        if (!this.isInitialized) return;
+        this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.04);
+      }
+
+      triggerTrainHorn() {
+        if (!this.ctx || !state.isPlaying) return;
+        const now = this.ctx.currentTime;
+        const hornFreqs = [293.66, 369.99, 440.00];
+
+        hornFreqs.forEach(freq => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(700, now);
+
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.025, now + 1.2);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.8);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.convolver);
+          gain.connect(this.masterGain);
+
+          osc.start(now);
+          osc.stop(now + 5.0);
+        });
+      }
+
+      startSadDreamSynth() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.isSynthPlaying = true;
+        this.synthStep = 0;
+
+        const playStep = () => {
+          if (!state.isPlaying || !this.isSynthPlaying) return;
+          const now = this.ctx.currentTime;
+          const chordIdx = Math.floor(this.synthStep / 4) % this.sadChords.length;
+          const chord = this.sadChords[chordIdx];
+
+          if (this.synthStep % 4 === 0) {
+            chord.forEach(freq => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              const filter = this.ctx.createBiquadFilter();
+
+              osc.type = 'triangle';
+              const warble = (Math.random() - 0.5) * 5;
+              osc.frequency.setValueAtTime(freq + warble, now);
+
+              filter.type = 'lowpass';
+              filter.frequency.setValueAtTime(450, now);
+
+              gain.gain.setValueAtTime(0, now);
+              gain.gain.linearRampToValueAtTime(0.05, now + 2.5);
+              gain.gain.linearRampToValueAtTime(0, now + 9.5);
+
+              osc.connect(filter);
+              filter.connect(gain);
+              gain.connect(this.convolver);
+              gain.connect(this.masterGain);
+
+              osc.start(now);
+              osc.stop(now + 10.0);
+            });
+          }
+
+          if (Math.random() > 0.15) {
+            const noteFreq = this.sadMelodyNotes[Math.floor(Math.random() * this.sadMelodyNotes.length)];
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(noteFreq, now);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(950, now);
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.065, now + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.2);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.convolver);
+            gain.connect(this.masterGain);
+
+            osc.start(now);
+            osc.stop(now + 4.5);
+          }
+
+          if (this.synthStep % 24 === 12 && state.scene !== 'theater') {
+            this.triggerTrainHorn();
+          }
+
+          this.synthStep++;
+          this.synthTimer = setTimeout(playStep, 2100);
+        };
+
+        playStep();
+      }
+
+      stopSynth() {
+        this.isSynthPlaying = false;
+        clearTimeout(this.synthTimer);
+      }
+    }
+
+    const melancholicDeck = new MelancholicAudioEngine();
+
+    /* ==========================================================================
+       3. Playlist & Audio/Video Loader
+       ========================================================================== */
+    const playlist = [
+      {
+        id: 'm1',
+        title: 'I WISH YOU WERE STILL HERE (1997 MEMORY)',
+        artist: 'MELANCHOLIC DREAM',
+        type: 'procedural',
+        isVideo: false
+      },
+      {
+        id: 'm2',
+        title: 'SUBMERGED TRACKS IN PURPLE DUSK (바다 철길)',
+        artist: 'MELANCHOLIC DREAM',
+        type: 'procedural',
+        isVideo: false
+      },
+      {
+        id: 'm3',
+        title: 'THE STATION AT THE END OF WORLD (세상의 끝 간이역)',
+        artist: 'MELANCHOLIC DREAM',
+        type: 'procedural',
+        isVideo: false
+      },
+      {
+        id: 'm4',
+        title: 'DREAMSCAPE // SNOW ROAD SILENCE (눈 내리는 숲길)',
+        artist: 'MELANCHOLIC DREAM',
+        type: 'procedural',
+        isVideo: false
+      }
+    ];
+
+    function renderPlaylistUI() {
+      trackListEl.innerHTML = '';
+      trackCountEl.innerText = playlist.length;
+
+      playlist.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = `playlist-item ${idx === state.currentTrackIdx ? 'active' : ''}`;
+        const icon = item.isVideo ? '📹' : '🌧️';
+        el.innerHTML = `
+          <div class="item-info">
+            <span class="item-title">${icon} ${idx + 1}. ${item.title}</span>
+            <span class="item-meta">${item.artist} ${item.isVideo ? '(VIDEO)' : ''}</span>
+          </div>
+          <span style="font-size: 11px; color: ${idx === state.currentTrackIdx ? 'var(--ash-rose)' : 'rgba(255,255,255,0.4)'};">
+            ${idx === state.currentTrackIdx ? '▶ PLAYING' : 'MEMORY'}
+          </span>
+        `;
+        el.addEventListener('click', () => selectTrack(idx));
+        trackListEl.appendChild(el);
+      });
+    }
+
+    function selectTrack(idx) {
+      state.currentTrackIdx = idx;
+      const track = playlist[idx];
+      trackNameEl.innerText = track.title;
+      renderPlaylistUI();
+
+      if (track.type === 'procedural') {
+        state.hasUserVideo = false;
+        billboardStatus.innerHTML = '<span>📺 전광판: 몽환 루프 (내 영상 대기 중)</span>';
+        billboardStatus.style.color = '#70c1b3';
+
+        mediaPlayer.pause();
+        mediaPlayer.currentTime = 0;
+        melancholicDeck.stopSynth();
+        if (state.isPlaying) {
+          melancholicDeck.startSadDreamSynth();
+        }
+        curTimeEl.innerText = '00:00';
+        durTimeEl.innerText = '∞';
+        trackSlider.value = 0;
+      } else if (track.type === 'local') {
+        melancholicDeck.stopSynth();
+        melancholicDeck.init();
+        mediaPlayer.src = track.url;
+        state.hasUserVideo = track.isVideo;
+
+        if (track.isVideo) {
+          billboardStatus.innerHTML = '<span>📺 스크린: 내 영상 동기화 상영 중</span>';
+          billboardStatus.style.color = '#70c1b3';
+        } else {
+          billboardStatus.innerHTML = '<span>📺 스크린: 몽환 루프 (오디오 재생 중)</span>';
+          billboardStatus.style.color = '#d5a6bd';
+        }
+
+        if (state.isPlaying) {
+          mediaPlayer.play().catch(() => {});
+        }
+      }
+      showToast(`${track.isVideo ? '📹' : '🌧️'} 선택: ${track.title}`);
+    }
+
+    function playTrack() {
+      melancholicDeck.init();
+      state.isPlaying = true;
+      btnPlayPause.innerText = '⏸️ 일시정지';
+      btnPlayPause.style.color = 'var(--ash-rose)';
+
+      const track = playlist[state.currentTrackIdx];
+      if (track.type === 'procedural') {
+        melancholicDeck.startSadDreamSynth();
+      } else {
+        mediaPlayer.play().catch(() => {});
+      }
+    }
+
+    function pauseTrack() {
+      state.isPlaying = false;
+      btnPlayPause.innerText = '▶ 재생';
+      btnPlayPause.style.color = 'var(--ash-rose)';
+
+      melancholicDeck.stopSynth();
+      mediaPlayer.pause();
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) {
+        pauseTrack();
+        showToast('일시 정지');
+      } else {
+        playTrack();
+        showToast('🌧️ 재생 시작');
+      }
+    }
+
+    function playNextTrack() {
+      const nextIdx = (state.currentTrackIdx + 1) % playlist.length;
+      selectTrack(nextIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function playPrevTrack() {
+      const prevIdx = (state.currentTrackIdx - 1 + playlist.length) % playlist.length;
+      selectTrack(prevIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function formatTime(secs) {
+      if (!secs || isNaN(secs)) return '00:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      let added = 0;
+      let firstVideoIdx = -1;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mkv|mov|avi)$/i.test(file.name);
+        const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|flac|ogg|m4a|aac)$/i.test(file.name);
+
+        if (isVideo || isAudio) {
+          const newIdx = playlist.length;
+          playlist.push({
+            id: 'local_' + Date.now() + '_' + i,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            artist: isVideo ? 'LOCAL VIDEO' : 'LOCAL AUDIO',
+            type: 'local',
+            isVideo: isVideo,
+            url: URL.createObjectURL(file)
+          });
+          if (isVideo && firstVideoIdx === -1) {
+            firstVideoIdx = newIdx;
+          }
+          added++;
+        }
+      }
+
+      if (added > 0) {
+        renderPlaylistUI();
+        const targetIdx = firstVideoIdx !== -1 ? firstVideoIdx : (playlist.length - added);
+        showToast(`📂 ${added}개 파일 추가 완료. 스크린에 연결합니다.`);
+        selectTrack(targetIdx);
+        playTrack();
+      }
+    }
+
+    btnLoadVideo.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      handleFiles(e.dataTransfer.files);
+    });
+
+    /* ==========================================================================
+       4. Responsive Canvas & Weather Initializers (Rain, Mist, Snow)
+       ========================================================================== */
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      initRain();
+      initMist();
+      initSnow();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initRain() {
+      state.rainDrops = [];
+      const count = Math.min(Math.floor(width / 4), 280);
+      for (let i = 0; i < count; i++) {
+        state.rainDrops.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          speed: Math.random() * 8 + 10,
+          length: Math.random() * 22 + 12,
+          opacity: Math.random() * 0.25 + 0.15
+        });
+      }
+    }
+
+    function initMist() {
+      state.mistDust = [];
+      const count = 50;
+      for (let i = 0; i < count; i++) {
+        state.mistDust.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: Math.random() * 0.35 + 0.08,
+          vy: Math.random() * 0.18 - 0.09,
+          radius: Math.random() * 2.2 + 0.9,
+          alpha: Math.random() * 0.45 + 0.2
+        });
+      }
+    }
+
+    function initSnow() {
+      state.snowFlakes = [];
+      const count = Math.min(Math.floor(width / 5.5), 220);
+      for (let i = 0; i < count; i++) {
+        state.snowFlakes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          radius: Math.random() * 2.6 + 0.9,
+          speed: Math.random() * 1.5 + 0.7,
+          swayAmp: Math.random() * 1.8 + 0.6,
+          swaySpeed: Math.random() * 0.002 + 0.001,
+          swayOffset: Math.random() * Math.PI * 2,
+          alpha: Math.random() * 0.55 + 0.25
+        });
+      }
+    }
+
+    /* ==========================================================================
+       5. Screen Renderer (Real Video or Procedural Dreamcore Loop)
+       ========================================================================== */
+    function renderBillboardScreen(x, y, w, h, timeNow, withScanlines = true) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+
+      const isVideoPlaying = (mediaPlayer && mediaPlayer.readyState >= 2 && mediaPlayer.videoWidth > 0 && !mediaPlayer.paused && !mediaPlayer.ended);
+
+      if (isVideoPlaying) {
+        try {
+          ctx.drawImage(mediaPlayer, x, y, w, h);
+        } catch (e) {
+          drawProceduralDreamLoop(x, y, w, h, timeNow);
+        }
+      } else {
+        drawProceduralDreamLoop(x, y, w, h, timeNow);
+      }
+
+      if (withScanlines) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+        for (let sy = y; sy < y + h; sy += 3) {
+          ctx.fillRect(x, sy, w, 1.2);
+        }
+
+        const innerVig = ctx.createRadialGradient(x + w / 2, y + h / 2, w * 0.25, x + w / 2, y + h / 2, w * 0.65);
+        innerVig.addColorStop(0, 'rgba(0,0,0,0)');
+        innerVig.addColorStop(1, 'rgba(10, 12, 20, 0.6)');
+        ctx.fillStyle = innerVig;
+        ctx.fillRect(x, y, w, h);
+
+        ctx.font = '600 9px "Courier New", monospace';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillText(isVideoPlaying ? 'PLAY ▶' : 'AUTO // MEMORY 1997', x + 10, y + 16);
+        ctx.font = '500 8px monospace';
+        ctx.fillStyle = 'rgba(112, 193, 179, 0.8)';
+        ctx.fillText('SP 0:00:00', x + w - 55, y + 16);
+      } else {
+        const cinVig = ctx.createRadialGradient(x + w / 2, y + h / 2, w * 0.35, x + w / 2, y + h / 2, w * 0.7);
+        cinVig.addColorStop(0, 'rgba(0,0,0,0)');
+        cinVig.addColorStop(1, 'rgba(0, 0, 0, 0.35)');
+        ctx.fillStyle = cinVig;
+        ctx.fillRect(x, y, w, h);
+      }
+
+      ctx.restore();
+    }
+
+    function drawProceduralDreamLoop(x, y, w, h, timeNow) {
+      const bGrad = ctx.createLinearGradient(x, y, x, y + h);
+      bGrad.addColorStop(0, '#1a102f');
+      bGrad.addColorStop(0.5, '#48284f');
+      bGrad.addColorStop(0.78, '#915370');
+      bGrad.addColorStop(1, '#d5a6bd');
+      ctx.fillStyle = bGrad;
+      ctx.fillRect(x, y, w, h);
+
+      const localHoriz = y + h * 0.68;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, localHoriz, w, y + h - localHoriz);
+      ctx.clip();
+      ctx.fillStyle = '#110b1a';
+      ctx.fillRect(x, localHoriz, w, y + h - localHoriz);
+
+      ctx.strokeStyle = 'rgba(213, 166, 189, 0.35)';
+      ctx.lineWidth = 1;
+
+      const vanishingX = x + w * 0.5;
+      const gridCols = 10;
+      for (let c = -gridCols; c <= gridCols; c++) {
+        ctx.beginPath();
+        ctx.moveTo(vanishingX, localHoriz);
+        ctx.lineTo(vanishingX + c * (w / 4), y + h);
+        ctx.stroke();
+      }
+
+      const speedOffset = (timeNow * 0.04) % 18;
+      for (let gy = localHoriz; gy < y + h; gy += 10) {
+        const py = gy + speedOffset;
+        if (py < y + h) {
+          ctx.beginPath();
+          ctx.moveTo(x, py);
+          ctx.lineTo(x + w, py);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      const sunX = x + w * 0.5;
+      const sunY = localHoriz - h * 0.18;
+      const sunR = Math.min(w, h) * 0.2;
+
+      const sunGlow = ctx.createRadialGradient(sunX, sunY, sunR * 0.2, sunX, sunY, sunR * 1.6);
+      sunGlow.addColorStop(0, 'rgba(255, 230, 200, 0.95)');
+      sunGlow.addColorStop(0.4, 'rgba(246, 200, 143, 0.5)');
+      sunGlow.addColorStop(1, 'rgba(142, 124, 195, 0)');
+      ctx.fillStyle = sunGlow;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunR * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fce7f3';
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#48284f';
+      for (let s = 0; s < 5; s++) {
+        const sy = sunY + s * (sunR / 3.5);
+        ctx.fillRect(sunX - sunR, sy, sunR * 2, 2.5);
+      }
+
+      if (melancholicDeck.analyser) {
+        const binCount = 32;
+        const freqData = new Uint8Array(binCount);
+        melancholicDeck.analyser.getByteFrequencyData(freqData);
+
+        const barW = (w - 20) / binCount;
+        ctx.fillStyle = 'rgba(112, 193, 179, 0.7)';
+        for (let b = 0; b < binCount; b++) {
+          const val = freqData[b] / 255;
+          const bh = val * (h * 0.28);
+          ctx.fillRect(x + 10 + b * barW, localHoriz - bh, barW - 1.5, bh);
+        }
+      }
+    }
+
+    /* ==========================================================================
+       6. SCENE 1: SUBMERGED RAILROAD & GIANT OCEAN MONOLITH BILLBOARD
+       ========================================================================== */
+    function drawSeaRailsScene(timeNow) {
+      const horizonY = height * 0.58;
+
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+      skyGrad.addColorStop(0, '#1c1b30');
+      skyGrad.addColorStop(0.5, '#4a3f5a');
+      skyGrad.addColorStop(0.8, '#8e6b7d');
+      skyGrad.addColorStop(1, '#d5a6bd');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, horizonY);
+
+      ctx.fillStyle = 'rgba(40, 36, 56, 0.65)';
+      ctx.beginPath();
+      ctx.moveTo(0, horizonY);
+      for (let x = 0; x <= width; x += 20) {
+        const my = horizonY - 18 - Math.sin(x * 0.0028) * 22 - Math.cos(x * 0.006) * 12;
+        ctx.lineTo(x, my);
+      }
+      ctx.lineTo(width, horizonY);
+      ctx.closePath();
+      ctx.fill();
+
+      const waterGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+      waterGrad.addColorStop(0, '#53455d');
+      waterGrad.addColorStop(0.4, '#2c293e');
+      waterGrad.addColorStop(1, '#11121c');
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, horizonY, width, height - horizonY);
+
+      const railCenterX = width * 0.48;
+
+      const bbW = Math.min(width * 0.36, 360);
+      const bbH = bbW * 0.58;
+      const bbX = railCenterX - bbW / 2;
+      const bbBottomY = horizonY - 14;
+      const bbY = bbBottomY - bbH;
+
+      ctx.save();
+      ctx.fillStyle = '#14121d';
+      ctx.strokeStyle = '#14121d';
+      ctx.lineWidth = 6;
+
+      const p1X = bbX + bbW * 0.22;
+      const p2X = bbX + bbW * 0.78;
+      const pillarDepth = 55;
+
+      ctx.fillRect(p1X - 5, bbBottomY, 10, pillarDepth);
+      ctx.fillRect(p2X - 5, bbBottomY, 10, pillarDepth);
+
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(p1X, bbBottomY + 5);
+      ctx.lineTo(p2X, bbBottomY + pillarDepth - 10);
+      ctx.moveTo(p2X, bbBottomY + 5);
+      ctx.lineTo(p1X, bbBottomY + pillarDepth - 10);
+      ctx.stroke();
+
+      ctx.fillStyle = '#1c1926';
+      ctx.fillRect(p1X - 10, horizonY - 2, 20, 8);
+      ctx.fillRect(p2X - 10, horizonY - 2, 20, 8);
+      ctx.strokeStyle = 'rgba(213, 166, 189, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(p1X, horizonY + 5, 14, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(p2X, horizonY + 5, 14, 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const bezel = 8;
+      ctx.fillStyle = '#13121b';
+      ctx.fillRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+      ctx.strokeStyle = '#272535';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+
+      const antX = bbX + bbW / 2;
+      const antY = bbY - bezel - 18;
+      ctx.strokeStyle = '#1a1824';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(antX, bbY - bezel);
+      ctx.lineTo(antX, antY);
+      ctx.stroke();
+
+      const beaconBlink = Math.sin(timeNow * 0.004) > 0.3 ? 1 : 0.1;
+      const bGlow = ctx.createRadialGradient(antX, antY, 1, antX, antY, 16);
+      bGlow.addColorStop(0, `rgba(255, 70, 70, ${beaconBlink})`);
+      bGlow.addColorStop(1, 'rgba(255, 70, 70, 0)');
+      ctx.fillStyle = bGlow;
+      ctx.beginPath();
+      ctx.arc(antX, antY, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      renderBillboardScreen(bbX, bbY, bbW, bbH, timeNow, true);
+
+      const sGlow = ctx.createRadialGradient(bbX + bbW / 2, bbY + bbH / 2, bbW * 0.3, bbX + bbW / 2, bbY + bbH / 2, bbW * 0.9);
+      sGlow.addColorStop(0, 'rgba(112, 193, 179, 0.08)');
+      sGlow.addColorStop(0.5, 'rgba(213, 166, 189, 0.06)');
+      sGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = sGlow;
+      ctx.fillRect(bbX - 80, bbY - 80, bbW + 160, bbH + 160);
+
+      ctx.save();
+      const reflY = horizonY;
+      const reflH = Math.min(height - horizonY, bbH * 1.3);
+      const reflRows = 30;
+
+      for (let r = 0; r < reflRows; r++) {
+        const ratio = r / reflRows;
+        const curY = reflY + Math.pow(ratio, 1.3) * reflH;
+        const sliceH = 3 + ratio * 3;
+        const waveOffset = Math.sin(timeNow * 0.0025 + r * 0.7) * (6 + ratio * 14);
+
+        const alpha = (1 - ratio) * 0.38;
+        ctx.fillStyle = `rgba(112, 193, 179, ${alpha * 0.7})`;
+        ctx.fillRect(bbX + waveOffset, curY, bbW, sliceH);
+
+        ctx.fillStyle = `rgba(213, 166, 189, ${alpha * 0.5})`;
+        ctx.fillRect(bbX + waveOffset * 0.5, curY + 1, bbW * 0.8, sliceH * 0.6);
+      }
+      ctx.restore();
+
+      ctx.restore();
+
+      const fogGrad = ctx.createLinearGradient(0, horizonY - 25, 0, horizonY + 25);
+      fogGrad.addColorStop(0, 'rgba(213, 166, 189, 0)');
+      fogGrad.addColorStop(0.5, 'rgba(213, 166, 189, 0.38)');
+      fogGrad.addColorStop(1, 'rgba(213, 166, 189, 0)');
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(0, horizonY - 25, width, 50);
+
+      ctx.save();
+      const trackRows = 24;
+
+      for (let i = 0; i < trackRows; i++) {
+        const ratio = i / trackRows;
+        const y = horizonY + Math.pow(ratio, 1.8) * (height - horizonY);
+        const tieW = 40 + ratio * 280;
+        const tieH = 2 + ratio * 4;
+
+        ctx.fillStyle = `rgba(28, 26, 36, ${0.4 + ratio * 0.55})`;
+        ctx.fillRect(railCenterX - tieW / 2, y, tieW, tieH);
+
+        ctx.fillStyle = `rgba(213, 166, 189, ${0.15 + ratio * 0.2})`;
+        ctx.fillRect(railCenterX - tieW / 2, y - 1, tieW, 1.5);
+      }
+
+      ctx.strokeStyle = 'rgba(180, 167, 214, 0.65)';
+      ctx.lineWidth = 2.5;
+
+      ctx.beginPath();
+      ctx.moveTo(railCenterX - 18, horizonY);
+      ctx.lineTo(railCenterX - 130, height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(railCenterX + 18, horizonY);
+      ctx.lineTo(railCenterX + 130, height);
+      ctx.stroke();
+
+      ctx.restore();
+
+      const lampX = width * 0.72;
+      const lampBaseY = horizonY + 75;
+      const lampHeight = 170;
+      const lampHeadY = lampBaseY - lampHeight;
+
+      ctx.save();
+      ctx.strokeStyle = '#181622';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(lampX, lampBaseY);
+      ctx.lineTo(lampX, lampHeadY + 20);
+      ctx.quadraticCurveTo(lampX, lampHeadY, lampX - 25, lampHeadY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#181622';
+      ctx.beginPath();
+      ctx.arc(lampX - 25, lampHeadY, 14, Math.PI, 0);
+      ctx.fill();
+
+      const flicker = (Math.sin(timeNow * 0.004) * 0.06 + Math.cos(timeNow * 0.009) * 0.04 + 0.9);
+
+      const lampGlow = ctx.createRadialGradient(lampX - 25, lampHeadY + 6, 2, lampX - 25, lampHeadY + 6, 120);
+      lampGlow.addColorStop(0, `rgba(246, 200, 143, ${0.85 * flicker})`);
+      lampGlow.addColorStop(0.35, `rgba(246, 180, 110, ${0.35 * flicker})`);
+      lampGlow.addColorStop(0.8, `rgba(213, 166, 189, ${0.1 * flicker})`);
+      lampGlow.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = lampGlow;
+      ctx.beginPath();
+      ctx.arc(lampX - 25, lampHeadY + 6, 120, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = `rgba(255, 245, 220, ${0.98 * flicker})`;
+      ctx.beginPath();
+      ctx.arc(lampX - 25, lampHeadY + 6, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalCompositeOperation = 'screen';
+      const reflGrad = ctx.createLinearGradient(0, lampBaseY, 0, height);
+      reflGrad.addColorStop(0, `rgba(246, 200, 143, ${0.45 * flicker})`);
+      reflGrad.addColorStop(0.8, 'rgba(246, 180, 110, 0.08)');
+      reflGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      const lampReflRows = 28;
+      for (let r = 0; r < lampReflRows; r++) {
+        const depth = r / lampReflRows;
+        const ry = lampBaseY + Math.pow(depth, 1.5) * (height - lampBaseY);
+        const rw = (25 + depth * 75);
+        const rx = lampX - 25 + Math.sin(timeNow * 0.002 + r * 0.8) * (8 * depth);
+        ctx.fillStyle = reflGrad;
+        ctx.fillRect(rx - rw / 2, ry, rw, 2 + depth * 3);
+      }
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       7. SCENE 2: RAINY DUSK, GIANT SKY BILLBOARD & SILHOUETTE TELEPHONE WIRES
+       ========================================================================== */
+    function drawTelephoneScene(timeNow) {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#151426');
+      skyGrad.addColorStop(0.45, '#3b2f4c');
+      skyGrad.addColorStop(0.75, '#784d63');
+      skyGrad.addColorStop(1, '#c48b9f');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const cityY = height * 0.82;
+
+      const bbW = Math.min(width * 0.44, 460);
+      const bbH = bbW * 0.56;
+      const bbX = width * 0.52 - bbW / 2;
+      const bbY = height * 0.24;
+
+      ctx.save();
+      const leg1X = bbX + bbW * 0.18;
+      const leg2X = bbX + bbW * 0.82;
+
+      ctx.strokeStyle = '#181524';
+      ctx.lineWidth = 5;
+
+      ctx.beginPath();
+      ctx.moveTo(leg1X, cityY + 30);
+      ctx.lineTo(leg1X, bbY + bbH);
+      ctx.moveTo(leg2X, cityY + 30);
+      ctx.lineTo(leg2X, bbY + bbH);
+      ctx.stroke();
+
+      ctx.lineWidth = 2.5;
+      const braceSteps = 6;
+      const stepH = (cityY + 30 - (bbY + bbH)) / braceSteps;
+      for (let s = 0; s < braceSteps; s++) {
+        const yTop = bbY + bbH + s * stepH;
+        const yBot = yTop + stepH;
+        ctx.beginPath();
+        ctx.moveTo(leg1X, yTop);
+        ctx.lineTo(leg2X, yBot);
+        ctx.moveTo(leg2X, yTop);
+        ctx.lineTo(leg1X, yBot);
+        ctx.stroke();
+      }
+
+      const bezel = 10;
+      ctx.fillStyle = '#100e18';
+      ctx.fillRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+      ctx.strokeStyle = '#221f2f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+
+      const beacon1X = bbX - bezel + 6;
+      const beacon2X = bbX + bbW + bezel - 6;
+      const beaconY = bbY - bezel - 12;
+      const blink = Math.sin(timeNow * 0.0035) > 0.25 ? 1 : 0.15;
+
+      [beacon1X, beacon2X].forEach(bx => {
+        ctx.strokeStyle = '#100e18';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(bx, bbY - bezel);
+        ctx.lineTo(bx, beaconY);
+        ctx.stroke();
+
+        const bGlow = ctx.createRadialGradient(bx, beaconY, 1, bx, beaconY, 14);
+        bGlow.addColorStop(0, `rgba(255, 60, 60, ${blink})`);
+        bGlow.addColorStop(1, 'rgba(255, 60, 60, 0)');
+        ctx.fillStyle = bGlow;
+        ctx.beginPath();
+        ctx.arc(bx, beaconY, 14, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      renderBillboardScreen(bbX, bbY, bbW, bbH, timeNow, true);
+
+      const skyBloom = ctx.createRadialGradient(bbX + bbW / 2, bbY + bbH / 2, bbW * 0.25, bbX + bbW / 2, bbY + bbH / 2, bbW * 0.95);
+      skyBloom.addColorStop(0, 'rgba(112, 193, 179, 0.09)');
+      skyBloom.addColorStop(0.5, 'rgba(213, 166, 189, 0.06)');
+      skyBloom.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = skyBloom;
+      ctx.fillRect(bbX - 100, bbY - 100, bbW + 200, bbH + 200);
+
+      ctx.restore();
+
+      ctx.fillStyle = '#110f18';
+      const bCount = 25;
+      const bw = width / bCount;
+      for (let b = 0; b < bCount; b++) {
+        const bh = 30 + Math.sin(b * 1.8) * 45 + (b % 4) * 25;
+        ctx.fillRect(b * bw, cityY - bh, bw - 2, bh + height - cityY);
+        if (b % 3 === 0) {
+          ctx.fillStyle = 'rgba(246, 200, 143, 0.45)';
+          ctx.fillRect(b * bw + 5, cityY - bh + 12, 4, 6);
+          ctx.fillRect(b * bw + 14, cityY - bh + 26, 4, 6);
+          ctx.fillStyle = '#110f18';
+        }
+      }
+
+      ctx.save();
+      ctx.strokeStyle = '#121019';
+      ctx.lineWidth = 9;
+      ctx.lineCap = 'round';
+
+      const pole1X = width * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(pole1X, height);
+      ctx.lineTo(pole1X, height * 0.15);
+      ctx.stroke();
+
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(pole1X - 55, height * 0.22);
+      ctx.lineTo(pole1X + 55, height * 0.22);
+      ctx.moveTo(pole1X - 45, height * 0.3);
+      ctx.lineTo(pole1X + 45, height * 0.3);
+      ctx.stroke();
+
+      const pole2X = width * 0.86;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(pole2X, height);
+      ctx.lineTo(pole2X, height * 0.18);
+      ctx.stroke();
+
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(pole2X - 50, height * 0.25);
+      ctx.lineTo(pole2X + 50, height * 0.25);
+      ctx.stroke();
+
+      ctx.lineWidth = 1.8;
+      const wireOffsets = [
+        { y1: height * 0.22, y2: height * 0.25, sag: 55 },
+        { y1: height * 0.22 - 10, y2: height * 0.25 - 8, sag: 45 },
+        { y1: height * 0.3, y2: height * 0.32, sag: 65 },
+        { y1: height * 0.18, y2: height * 0.2, sag: 40 }
+      ];
+
+      wireOffsets.forEach(w => {
+        ctx.beginPath();
+        ctx.moveTo(pole1X, w.y1);
+        ctx.bezierCurveTo(
+          width * 0.45, w.y1 + w.sag,
+          width * 0.65, w.y2 + w.sag,
+          pole2X, w.y2
+        );
+        ctx.stroke();
+      });
+
+      const birdX = width * 0.46;
+      const birdY = height * 0.22 + 45;
+      ctx.fillStyle = '#0e0c15';
+      ctx.beginPath();
+      ctx.ellipse(birdX, birdY - 3, 6, 4, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(birdX + 4, birdY - 6, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       8. SCENE 3: FORGOTTEN PLATFORM BENCH & ILLUMINATED AD DISPLAY AT 4:44 AM
+       ========================================================================== */
+    function drawPlatformScene(timeNow) {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#121420');
+      skyGrad.addColorStop(0.5, '#22293d');
+      skyGrad.addColorStop(0.85, '#3d4860');
+      skyGrad.addColorStop(1, '#66748f');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const platY = height * 0.65;
+      ctx.fillStyle = '#1e212b';
+      ctx.fillRect(0, platY, width, height - platY);
+
+      ctx.fillStyle = 'rgba(214, 180, 110, 0.45)';
+      ctx.fillRect(0, platY + 12, width, 6);
+
+      ctx.save();
+      for (let f = 0; f < 3; f++) {
+        const fogOffset = Math.sin(timeNow * 0.0008 + f * 1.5) * 40;
+        const fGrad = ctx.createLinearGradient(0, platY - 40 + f * 30, 0, platY + 80);
+        fGrad.addColorStop(0, 'rgba(102, 116, 143, 0)');
+        fGrad.addColorStop(0.5, 'rgba(180, 195, 215, 0.22)');
+        fGrad.addColorStop(1, 'rgba(102, 116, 143, 0)');
+        ctx.fillStyle = fGrad;
+        ctx.fillRect(0, platY - 40 + f * 30 + fogOffset, width, 80);
+      }
+      ctx.restore();
+
+      const benchX = width * 0.48;
+      const benchY = platY + 55;
+      const benchW = 140;
+
+      const bbW = Math.min(width * 0.28, 280);
+      const bbH = bbW * 0.64;
+      const bbX = benchX - benchW / 2 - bbW - 35;
+      const bbBottomY = platY + 35;
+      const bbY = bbBottomY - bbH;
+
+      ctx.save();
+      ctx.strokeStyle = '#0f1118';
+      ctx.lineWidth = 6;
+      const post1X = bbX + 22;
+      const post2X = bbX + bbW - 22;
+
+      ctx.beginPath();
+      ctx.moveTo(post1X, bbBottomY);
+      ctx.lineTo(post1X, platY + 65);
+      ctx.moveTo(post2X, bbBottomY);
+      ctx.lineTo(post2X, platY + 65);
+      ctx.stroke();
+
+      const bezel = 7;
+      ctx.fillStyle = '#141620';
+      ctx.fillRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+      ctx.strokeStyle = '#2b3042';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bbX - bezel, bbY - bezel, bbW + bezel * 2, bbH + bezel * 2);
+
+      ctx.fillStyle = '#0f1118';
+      ctx.fillRect(bbX - bezel - 4, bbY - bezel - 7, bbW + bezel * 2 + 8, 7);
+
+      renderBillboardScreen(bbX, bbY, bbW, bbH, timeNow, true);
+
+      const wetGlow = ctx.createRadialGradient(bbX + bbW / 2, platY + 50, 10, bbX + bbW / 2, platY + 50, bbW * 0.85);
+      wetGlow.addColorStop(0, 'rgba(112, 193, 179, 0.25)');
+      wetGlow.addColorStop(0.5, 'rgba(213, 166, 189, 0.12)');
+      wetGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = wetGlow;
+      ctx.fillRect(bbX - 40, platY + 20, bbW + 80, 70);
+
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = '#0e1017';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(benchX - benchW / 2 + 15, benchY);
+      ctx.lineTo(benchX - benchW / 2 + 15, benchY + 45);
+      ctx.moveTo(benchX + benchW / 2 - 15, benchY);
+      ctx.lineTo(benchX + benchW / 2 - 15, benchY + 45);
+      ctx.stroke();
+
+      ctx.fillStyle = '#2d2522';
+      ctx.fillRect(benchX - benchW / 2, benchY, benchW, 8);
+      ctx.fillRect(benchX - benchW / 2, benchY - 26, benchW, 6);
+      ctx.fillRect(benchX - benchW / 2, benchY - 14, benchW, 6);
+
+      const lampX = benchX + benchW / 2 + 50;
+      const lampY = platY - 110;
+
+      ctx.strokeStyle = '#0e1017';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(lampX, platY + 60);
+      ctx.lineTo(lampX, lampY);
+      ctx.lineTo(lampX - 25, lampY);
+      ctx.stroke();
+
+      const lampGlow = ctx.createRadialGradient(lampX - 25, lampY + 5, 2, lampX - 25, lampY + 5, 110);
+      lampGlow.addColorStop(0, 'rgba(235, 245, 255, 0.65)');
+      lampGlow.addColorStop(0.4, 'rgba(180, 205, 235, 0.25)');
+      lampGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = lampGlow;
+      ctx.beginPath();
+      ctx.arc(lampX - 25, lampY + 5, 110, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       9. SCENE 4: UPGRADED MIDNIGHT CINEMA (PERSPECTIVE STEEL DOOR & EXIT SIGN)
+       ========================================================================== */
+    function drawRealisticCinemaSeat(x, y, scale, bounceColor, bounceAlpha, hasDrink = false) {
+      ctx.save();
+      const seatW = 44 * scale;
+      const seatH = 46 * scale;
+
+      ctx.fillStyle = '#09070c';
+      ctx.fillRect(x - 3 * scale, y + seatH * 0.42, 6 * scale, 15 * scale);
+
+      const backGrad = ctx.createLinearGradient(x - seatW / 2, y - seatH * 0.4, x + seatW / 2, y + seatH * 0.45);
+      backGrad.addColorStop(0, '#2b0d17');
+      backGrad.addColorStop(0.5, '#421422');
+      backGrad.addColorStop(1, '#1b060d');
+
+      ctx.fillStyle = backGrad;
+      ctx.beginPath();
+      ctx.roundRect(x - seatW * 0.44, y - seatH * 0.35, seatW * 0.88, seatH * 0.76, [8 * scale, 8 * scale, 3 * scale, 3 * scale]);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(15, 4, 8, 0.65)';
+      ctx.lineWidth = 1.6 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x - seatW * 0.16, y - seatH * 0.28);
+      ctx.lineTo(x - seatW * 0.16, y + seatH * 0.35);
+      ctx.moveTo(x + seatW * 0.16, y - seatH * 0.28);
+      ctx.lineTo(x + seatW * 0.16, y + seatH * 0.35);
+      ctx.stroke();
+
+      const headW = seatW * 0.74;
+      const headH = seatH * 0.30;
+      const headY = y - seatH * 0.50;
+
+      const headGrad = ctx.createLinearGradient(x, headY, x, headY + headH);
+      headGrad.addColorStop(0, '#541c2d');
+      headGrad.addColorStop(0.6, '#39101d');
+      headGrad.addColorStop(1, '#20070f');
+
+      ctx.fillStyle = headGrad;
+      ctx.beginPath();
+      ctx.roundRect(x - headW / 2, headY, headW, headH, 5 * scale);
+      ctx.fill();
+
+      ctx.strokeStyle = `rgba(${bounceColor}, ${bounceAlpha * 0.85})`;
+      ctx.lineWidth = 2.0 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x - headW * 0.42, headY + 1.5 * scale);
+      ctx.lineTo(x + headW * 0.42, headY + 1.5 * scale);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(${bounceColor}, ${bounceAlpha * 0.45})`;
+      ctx.lineWidth = 1.5 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x - seatW * 0.42, y - seatH * 0.30);
+      ctx.lineTo(x - headW * 0.46, y - seatH * 0.30);
+      ctx.moveTo(x + headW * 0.46, y - seatH * 0.30);
+      ctx.lineTo(x + seatW * 0.42, y - seatH * 0.30);
+      ctx.stroke();
+
+      const baseW = seatW * 0.82;
+      const baseY = y + seatH * 0.34;
+      ctx.fillStyle = '#200710';
+      ctx.beginPath();
+      ctx.roundRect(x - baseW / 2, baseY, baseW, 7 * scale, 3 * scale);
+      ctx.fill();
+
+      const armW = 6.5 * scale;
+      const armH = 22 * scale;
+      const armY = y - 2 * scale;
+
+      ctx.fillStyle = '#16050b';
+      ctx.beginPath();
+      ctx.roundRect(x - seatW * 0.44 - armW, armY, armW, armH, 3 * scale);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.roundRect(x + seatW * 0.44, armY, armW, armH, 3 * scale);
+      ctx.fill();
+
+      const cupX = x + seatW * 0.44 + armW * 0.5;
+      const cupY = armY + 3 * scale;
+      ctx.fillStyle = '#070305';
+      ctx.beginPath();
+      ctx.ellipse(cupX, cupY, 3.0 * scale, 1.8 * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (hasDrink) {
+        ctx.fillStyle = '#b71c1c';
+        ctx.fillRect(cupX - 2.5 * scale, cupY - 12 * scale, 5 * scale, 12 * scale);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(cupX - 3.2 * scale, cupY - 14 * scale, 6.4 * scale, 2.5 * scale);
+        ctx.strokeStyle = '#ffeb3b';
+        ctx.lineWidth = 1.2 * scale;
+        ctx.beginPath();
+        ctx.moveTo(cupX, cupY - 14 * scale);
+        ctx.lineTo(cupX + 3 * scale, cupY - 21 * scale);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTheaterScene(timeNow) {
+      ctx.fillStyle = '#07080d';
+      ctx.fillRect(0, 0, width, height);
+
+      const scrW = Math.min(width * 0.68, 800);
+      const scrH = scrW * 0.52;
+      const scrX = width * 0.5 - scrW / 2;
+      const scrY = height * 0.35 - scrH * 0.5;
+
+      const stageY = scrY + scrH + 12;
+      const stageH = 14;
+      const floorY = stageY + stageH;
+
+      function getWallLeftX(y) {
+        const t = Math.max(0, Math.min(1, (y - floorY) / Math.max(1, height - floorY)));
+        return width * 0.17 * (1 - t) + width * 0.07 * t;
+      }
+      function getWallRightX(y) {
+        return width - getWallLeftX(y);
+      }
+
+      ctx.save();
+      const projOriginX = width * 0.5;
+      const projOriginY = -30;
+      const projFlicker = Math.sin(timeNow * 0.005) * 0.03 + Math.cos(timeNow * 0.011) * 0.02 + 0.98;
+
+      const beamGrad = ctx.createRadialGradient(projOriginX, scrY, scrW * 0.08, projOriginX, scrY + scrH * 0.5, scrW * 0.85);
+      beamGrad.addColorStop(0, `rgba(220, 235, 255, ${0.085 * projFlicker})`);
+      beamGrad.addColorStop(0.5, `rgba(180, 205, 235, ${0.04 * projFlicker})`);
+      beamGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath();
+      ctx.moveTo(projOriginX - 35, projOriginY);
+      ctx.lineTo(scrX + scrW + 20, scrY + scrH + 10);
+      ctx.lineTo(scrX - 20, scrY + scrH + 10);
+      ctx.lineTo(projOriginX + 35, projOriginY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      const ambGlow = ctx.createRadialGradient(scrX + scrW / 2, scrY + scrH / 2, scrW * 0.28, scrX + scrW / 2, scrY + scrH / 2, scrW * 0.98);
+      ambGlow.addColorStop(0, 'rgba(112, 193, 179, 0.15)');
+      ambGlow.addColorStop(0.4, 'rgba(142, 124, 195, 0.08)');
+      ambGlow.addColorStop(0.8, 'rgba(213, 166, 189, 0.03)');
+      ambGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = ambGlow;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      ctx.fillStyle = '#1c080f';
+      ctx.fillRect(scrX - 34, scrY - 20, 34, scrH + 40);
+      ctx.fillRect(scrX + scrW, scrY - 20, 34, scrH + 40);
+      ctx.fillRect(scrX - 38, scrY - 28, scrW + 76, 28);
+
+      ctx.fillStyle = '#320f1b';
+      for (let c = scrX - 32; c < scrX; c += 8) {
+        ctx.fillRect(c, scrY - 20, 4, scrH + 40);
+      }
+      for (let c = scrX + scrW + 4; c < scrX + scrW + 34; c += 8) {
+        ctx.fillRect(c, scrY - 20, 4, scrH + 40);
+      }
+      ctx.restore();
+
+      const sBezel = 8;
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(scrX - sBezel, scrY - sBezel, scrW + sBezel * 2, scrH + sBezel * 2);
+      ctx.strokeStyle = '#151722';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(scrX - sBezel, scrY - sBezel, scrW + sBezel * 2, scrH + sBezel * 2);
+
+      renderBillboardScreen(scrX, scrY, scrW, scrH, timeNow, false);
+
+      ctx.fillStyle = '#110c14';
+      ctx.fillRect(scrX - 25, stageY, scrW + 50, stageH);
+      ctx.fillStyle = 'rgba(246, 200, 143, 0.35)';
+      for (let f = 0; f < 8; f++) {
+        ctx.fillRect(scrX + 15 + f * ((scrW - 30) / 7), stageY + 2, 8, 2);
+      }
+
+      const floorLeftBottom = getWallLeftX(height);
+      const floorRightBottom = getWallRightX(height);
+      const floorLeftTop = getWallLeftX(floorY);
+      const floorRightTop = getWallRightX(floorY);
+
+      const carpetGrad = ctx.createLinearGradient(0, floorY, 0, height);
+      carpetGrad.addColorStop(0, '#0e0914');
+      carpetGrad.addColorStop(0.5, '#150f1d');
+      carpetGrad.addColorStop(1, '#0c0712');
+      ctx.fillStyle = carpetGrad;
+      ctx.beginPath();
+      ctx.moveTo(floorLeftBottom, height);
+      ctx.lineTo(floorLeftTop, floorY);
+      ctx.lineTo(floorRightTop, floorY);
+      ctx.lineTo(floorRightBottom, height);
+      ctx.closePath();
+      ctx.fill();
+
+      const tierYs = [floorY + 22, floorY + 68, floorY + 124, floorY + 190];
+      tierYs.forEach(ty => {
+        if (ty > height + 20) return;
+        const curLeft = getWallLeftX(ty);
+        const curRight = getWallRightX(ty);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.fillRect(curLeft, ty - 2, curRight - curLeft, 4);
+
+        ctx.fillStyle = 'rgba(246, 200, 143, 0.5)';
+        ctx.fillRect(curLeft + 18, ty, 22, 2.5);
+        ctx.fillRect(curRight - 40, ty, 22, 2.5);
+      });
+
+      const bounceColor = '112, 193, 179';
+      const seatRowConfigs = [
+        { y: floorY + 14, scale: 0.52, count: 11, bounceAlpha: 0.22, hasDrink: false },
+        { y: floorY + 54, scale: 0.70, count: 9, bounceAlpha: 0.35, hasDrink: false },
+        { y: floorY + 104, scale: 0.94, count: 8, bounceAlpha: 0.52, hasDrink: false },
+        { y: floorY + 168, scale: 1.25, count: 6, bounceAlpha: 0.70, hasDrink: true }
+      ];
+
+      seatRowConfigs.forEach((row) => {
+        if (row.y > height + 40) return;
+        const rowLeft = getWallLeftX(row.y);
+        const rowRight = getWallRightX(row.y);
+        const aisleMargin = 55 * row.scale + 20;
+        const seatingLeft = rowLeft + aisleMargin;
+        const seatingRight = rowRight - aisleMargin;
+        const seatingWidth = seatingRight - seatingLeft;
+        const count = row.count;
+        const spacing = seatingWidth / (count - 1);
+
+        for (let i = 0; i < count; i++) {
+          const sx = seatingLeft + i * spacing;
+          const drink = (row.hasDrink && i === 4);
+          drawRealisticCinemaSeat(sx, row.y, row.scale, bounceColor, row.bounceAlpha, drink);
+        }
+      });
+
+      // Left Wall
+      const leftWallGrad = ctx.createLinearGradient(0, 0, width * 0.18, 0);
+      leftWallGrad.addColorStop(0, '#131522');
+      leftWallGrad.addColorStop(0.7, '#0b0c14');
+      leftWallGrad.addColorStop(1, '#06070b');
+      ctx.fillStyle = leftWallGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(width * 0.17, height * 0.12);
+      ctx.lineTo(floorLeftTop, floorY);
+      ctx.lineTo(floorLeftBottom, height);
+      ctx.lineTo(0, height);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right Wall
+      const rightWallGrad = ctx.createLinearGradient(width, 0, width * 0.82, 0);
+      rightWallGrad.addColorStop(0, '#131522');
+      rightWallGrad.addColorStop(0.7, '#0b0c14');
+      rightWallGrad.addColorStop(1, '#06070b');
+      ctx.fillStyle = rightWallGrad;
+      ctx.beginPath();
+      ctx.moveTo(width, 0);
+      ctx.lineTo(width * 0.83, height * 0.12);
+      ctx.lineTo(floorRightTop, floorY);
+      ctx.lineTo(floorRightBottom, height);
+      ctx.lineTo(width, height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1.5;
+      for (let s = 1; s <= 3; s++) {
+        const lx = width * 0.035 * s;
+        ctx.beginPath();
+        ctx.moveTo(lx, height * 0.04 * s);
+        ctx.lineTo(lx, height * (1 - 0.04 * s));
+        ctx.stroke();
+
+        const rx = width - width * 0.035 * s;
+        ctx.beginPath();
+        ctx.moveTo(rx, height * 0.04 * s);
+        ctx.lineTo(rx, height * (1 - 0.04 * s));
+        ctx.stroke();
+      }
+
+      const ceilGrad = ctx.createLinearGradient(0, 0, 0, height * 0.16);
+      ceilGrad.addColorStop(0, '#0c0e18');
+      ceilGrad.addColorStop(1, '#06070b');
+      ctx.fillStyle = ceilGrad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(width, 0);
+      ctx.lineTo(width * 0.83, height * 0.12);
+      ctx.lineTo(width * 0.17, height * 0.12);
+      ctx.closePath();
+      ctx.fill();
+
+      // PERSPECTIVE STEEL DOOR & EXIT SIGN
+      ctx.save();
+      const dNearX = width * 0.032;
+      const dFarX = width * 0.088;
+      const dNearFloorY = height * 0.88;
+      const dFarFloorY = height * 0.68;
+      const dNearTopY = height * 0.44;
+      const dFarTopY = height * 0.38;
+
+      ctx.fillStyle = '#0a0b12';
+      ctx.beginPath();
+      ctx.moveTo(dNearX - 3, dNearTopY - 4);
+      ctx.lineTo(dFarX + 3, dFarTopY - 3);
+      ctx.lineTo(dFarX + 3, dFarFloorY + 2);
+      ctx.lineTo(dNearX - 3, dNearFloorY + 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#272a38';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      const steelGrad = ctx.createLinearGradient(dNearX, dNearTopY, dFarX, dFarFloorY);
+      steelGrad.addColorStop(0, '#222532');
+      steelGrad.addColorStop(0.35, '#171922');
+      steelGrad.addColorStop(0.85, '#0d0e14');
+      steelGrad.addColorStop(1, '#090a0f');
+
+      ctx.fillStyle = steelGrad;
+      ctx.beginPath();
+      ctx.moveTo(dNearX, dNearTopY);
+      ctx.lineTo(dFarX, dFarTopY);
+      ctx.lineTo(dFarX, dFarFloorY);
+      ctx.lineTo(dNearX, dNearFloorY);
+      ctx.closePath();
+      ctx.fill();
+
+      const midYNear = dNearTopY + (dNearFloorY - dNearTopY) * 0.52;
+      const midYFar = dFarTopY + (dFarFloorY - dFarTopY) * 0.52;
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillStyle = 'rgba(10, 12, 18, 0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(dNearX + 4, dNearTopY + 8);
+      ctx.lineTo(dFarX - 4, dFarTopY + 6);
+      ctx.lineTo(dFarX - 4, midYFar - 10);
+      ctx.lineTo(dNearX + 4, midYNear - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(dNearX + 4, midYNear + 12);
+      ctx.lineTo(dFarX - 4, midYFar + 10);
+      ctx.lineTo(dFarX - 4, dFarFloorY - 14);
+      ctx.lineTo(dNearX + 4, dNearFloorY - 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      const kickTopNear = dNearFloorY - (dNearFloorY - dNearTopY) * 0.12;
+      const kickTopFar = dFarFloorY - (dFarFloorY - dFarTopY) * 0.12;
+      const kickGrad = ctx.createLinearGradient(dNearX, kickTopNear, dFarX, dFarFloorY);
+      kickGrad.addColorStop(0, '#3a3e50');
+      kickGrad.addColorStop(0.5, '#222634');
+      kickGrad.addColorStop(1, '#141620');
+      ctx.fillStyle = kickGrad;
+      ctx.beginPath();
+      ctx.moveTo(dNearX + 2, kickTopNear);
+      ctx.lineTo(dFarX - 2, kickTopFar);
+      ctx.lineTo(dFarX - 2, dFarFloorY - 2);
+      ctx.lineTo(dNearX + 2, dNearFloorY - 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#42485a';
+      [0.2, 0.5, 0.8].forEach(hRatio => {
+        const hY = dNearTopY + (dNearFloorY - dNearTopY) * hRatio;
+        ctx.fillRect(dNearX - 4, hY - 5, 4, 10);
+      });
+
+      const pushNearY = midYNear - 2;
+      const pushFarY = midYFar - 2;
+
+      ctx.strokeStyle = '#b0bec5';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(dNearX + 4, pushNearY);
+      ctx.lineTo(dFarX - 4, pushFarY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#d32f2f';
+      ctx.lineWidth = 2.5;
+      const barMidX1 = dNearX + (dFarX - dNearX) * 0.25;
+      const barMidY1 = pushNearY + (pushFarY - pushNearY) * 0.25;
+      const barMidX2 = dNearX + (dFarX - dNearX) * 0.75;
+      const barMidY2 = pushNearY + (pushFarY - pushNearY) * 0.75;
+      ctx.beginPath();
+      ctx.moveTo(barMidX1, barMidY1);
+      ctx.lineTo(barMidX2, barMidY2);
+      ctx.stroke();
+
+      // PERSPECTIVE EXIT SIGN
+      const sNearX = dNearX + (dFarX - dNearX) * 0.15;
+      const sFarX = dFarX - (dFarX - dNearX) * 0.10;
+      const sNearBotY = dNearTopY - 8;
+      const sFarBotY = dFarTopY - 7;
+      const sNearTopY = sNearBotY - 20;
+      const sFarTopY = sFarBotY - 16;
+
+      const exitCenterY = (sNearTopY + sFarBotY) / 2;
+      const exitCenterX = (sNearX + sFarX) / 2;
+
+      const exitGlow = ctx.createRadialGradient(exitCenterX, exitCenterY, 4, exitCenterX, exitCenterY + 40, 110);
+      exitGlow.addColorStop(0, 'rgba(0, 230, 118, 0.65)');
+      exitGlow.addColorStop(0.35, 'rgba(0, 230, 118, 0.22)');
+      exitGlow.addColorStop(0.7, 'rgba(0, 230, 118, 0.05)');
+      exitGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = exitGlow;
+      ctx.beginPath();
+      ctx.arc(exitCenterX, exitCenterY + 20, 110, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#03140a';
+      ctx.beginPath();
+      ctx.moveTo(sNearX - 2, sNearTopY - 2);
+      ctx.lineTo(sFarX + 2, sFarTopY - 2);
+      ctx.lineTo(sFarX + 2, sFarBotY + 2);
+      ctx.lineTo(sNearX - 2, sNearBotY + 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#00e676';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const faceGrad = ctx.createLinearGradient(sNearX, sNearTopY, sFarX, sFarBotY);
+      faceGrad.addColorStop(0, '#00e676');
+      faceGrad.addColorStop(0.6, '#00c853');
+      faceGrad.addColorStop(1, '#008535');
+      ctx.fillStyle = faceGrad;
+      ctx.beginPath();
+      ctx.moveTo(sNearX, sNearTopY);
+      ctx.lineTo(sFarX, sFarTopY);
+      ctx.lineTo(sFarX, sFarBotY);
+      ctx.lineTo(sNearX, sNearBotY);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.save();
+      const dx = sFarX - sNearX;
+      const dy = sFarBotY - sNearBotY;
+      const angle = Math.atan2(dy, dx);
+      ctx.translate(sNearX + 4, sNearBotY - 4);
+      ctx.rotate(angle);
+      ctx.transform(1, 0, 0.15, 0.85, 0, 0);
+
+      ctx.fillStyle = '#052210';
+      ctx.font = '900 10px monospace';
+      ctx.fillText('🏃 EXIT', 2, -2);
+      ctx.restore();
+
+      ctx.strokeStyle = 'rgba(0, 230, 118, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(dNearX + 6, pushNearY - 1.5);
+      ctx.lineTo(dFarX - 6, pushFarY - 1.5);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       10. SCENE 5: DREAMSCAPE // SNOW ROAD SILENCE (눈 내리는 고요한 숲길과 도로)
+       (유저 제공 이미지: 깊은 안개 속 도로, 고독한 인물, 눈 내리는 숲, 거대 전광판)
+       ========================================================================== */
+    function drawSnowRoadScene(timeNow) {
+      const vx = width * 0.5;
+      const vy = height * 0.45;
+
+      // 1. Deep Midnight Blue Atmospheric Fog & Horizon
+      const skyGrad = ctx.createRadialGradient(vx, vy, 10, vx, vy, Math.max(width, height) * 0.85);
+      skyGrad.addColorStop(0, '#164366');   // Luminous misty cyan-blue at center vanishing point
+      skyGrad.addColorStop(0.35, '#0c263c'); // Moody deep prussian blue
+      skyGrad.addColorStop(0.70, '#051320'); // Twilight midnight blue
+      skyGrad.addColorStop(1, '#02060b');    // Deep vignette dark
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Distant atmospheric horizontal fog drifts
+      ctx.save();
+      for (let f = 0; f < 3; f++) {
+        const driftOffset = Math.sin(timeNow * 0.0006 + f * 1.8) * 35;
+        const fogH = 60 + f * 35;
+        const fogY = vy - 30 + f * 20;
+        const fGrad = ctx.createLinearGradient(0, fogY, 0, fogY + fogH);
+        fGrad.addColorStop(0, 'rgba(22, 67, 102, 0)');
+        fGrad.addColorStop(0.5, 'rgba(28, 80, 120, 0.28)');
+        fGrad.addColorStop(1, 'rgba(22, 67, 102, 0)');
+        ctx.fillStyle = fGrad;
+        ctx.fillRect(driftOffset - 50, fogY, width + 100, fogH);
+      }
+      ctx.restore();
+
+      // 2. Asphalt Road with Gentle Curve Vanishing into Deep Mist
+      const roadLeftBottom = width * 0.28;
+      const roadRightBottom = width * 0.72;
+      const roadLeftTop = vx - 14;
+      const roadRightTop = vx + 14;
+
+      ctx.save();
+      const roadGrad = ctx.createLinearGradient(0, vy, 0, height);
+      roadGrad.addColorStop(0, '#0a1a28');
+      roadGrad.addColorStop(0.4, '#060e18');
+      roadGrad.addColorStop(1, '#03080e');
+
+      ctx.fillStyle = roadGrad;
+      ctx.beginPath();
+      ctx.moveTo(roadLeftBottom, height);
+      ctx.bezierCurveTo(width * 0.36, height * 0.75, width * 0.44, height * 0.55, roadLeftTop, vy);
+      ctx.lineTo(roadRightTop, vy);
+      ctx.bezierCurveTo(width * 0.56, height * 0.55, width * 0.64, height * 0.75, roadRightBottom, height);
+      ctx.closePath();
+      ctx.fill();
+
+      // Road shoulders with accumulated cold snow dust
+      ctx.fillStyle = 'rgba(160, 198, 232, 0.14)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(roadLeftBottom - 8, height);
+      ctx.bezierCurveTo(width * 0.35, height * 0.75, width * 0.43, height * 0.55, roadLeftTop - 3, vy);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(roadRightBottom + 8, height);
+      ctx.bezierCurveTo(width * 0.65, height * 0.75, width * 0.57, height * 0.55, roadRightTop + 3, vy);
+      ctx.stroke();
+
+      // Dashed White Road Centerline (Curving exactly like reference image)
+      const dashSteps = 22;
+      for (let s = 0; s < dashSteps; s++) {
+        const t1 = s / dashSteps;
+        const t2 = (s + 0.45) / dashSteps;
+
+        // Cubic bezier interpolation helper
+        function getCenterPoint(t) {
+          const u = 1 - t;
+          const p0x = width * 0.50, p0y = height;
+          const p1x = width * 0.50, p1y = height * 0.75;
+          const p2x = width * 0.51, p2y = height * 0.55;
+          const p3x = vx, p3y = vy;
+
+          const cx = u * u * u * p0x + 3 * u * u * t * p1x + 3 * u * t * t * p2x + t * t * t * p3x;
+          const cy = u * u * u * p0y + 3 * u * u * t * p1y + 3 * u * t * t * p2y + t * t * t * p3y;
+          return { x: cx, y: cy };
+        }
+
+        const pt1 = getCenterPoint(1 - t1);
+        const pt2 = getCenterPoint(1 - t2);
+        const dashWidth = 1.2 + (1 - t1) * 3.8;
+        const alpha = 0.25 + (1 - t1) * 0.65;
+
+        ctx.strokeStyle = `rgba(175, 210, 238, ${alpha})`;
+        ctx.lineWidth = dashWidth;
+        ctx.beginPath();
+        ctx.moveTo(pt1.x, pt1.y);
+        ctx.lineTo(pt2.x, pt2.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // 3. Dense Winter Forest with Bare Branches (Flanking left & right like reference image)
+      ctx.save();
+      // Helper function to draw procedural silhouetted bare tree
+      function drawSilhouetteTree(rootX, rootY, treeH, branchSpread, alpha = 0.85) {
+        ctx.save();
+        ctx.strokeStyle = `rgba(3, 8, 14, ${alpha})`;
+        ctx.lineWidth = Math.max(1.5, treeH * 0.04);
+        ctx.lineCap = 'round';
+
+        // Trunk
+        ctx.beginPath();
+        ctx.moveTo(rootX, rootY);
+        const midX = rootX + (Math.sin(rootX) * 12);
+        const topX = rootX + (Math.cos(rootY) * 18);
+        const topY = rootY - treeH;
+        ctx.quadraticCurveTo(midX, rootY - treeH * 0.5, topX, topY);
+        ctx.stroke();
+
+        // Branches
+        ctx.lineWidth = Math.max(1, treeH * 0.02);
+        for (let b = 1; b <= 5; b++) {
+          const by = rootY - treeH * (0.3 + b * 0.12);
+          const dir = b % 2 === 0 ? 1 : -1;
+          const bLen = branchSpread * (0.8 - b * 0.08);
+
+          ctx.beginPath();
+          ctx.moveTo(rootX + dir * 2, by);
+          ctx.quadraticCurveTo(
+            rootX + dir * (bLen * 0.6), by - 15,
+            rootX + dir * bLen, by - 30 - b * 5
+          );
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Left forest trees
+      const leftTreeRoots = [
+        { x: width * 0.02, y: height, h: height * 0.72, spread: 90 },
+        { x: width * 0.09, y: height * 0.95, h: height * 0.65, spread: 80 },
+        { x: width * 0.16, y: height * 0.85, h: height * 0.56, spread: 65 },
+        { x: width * 0.24, y: height * 0.72, h: height * 0.44, spread: 50 },
+        { x: width * 0.32, y: height * 0.58, h: height * 0.32, spread: 35 }
+      ];
+      leftTreeRoots.forEach(t => drawSilhouetteTree(t.x, t.y, t.h, t.spread, 0.92));
+
+      // Right forest trees
+      const rightTreeRoots = [
+        { x: width * 0.98, y: height, h: height * 0.75, spread: 95 },
+        { x: width * 0.91, y: height * 0.94, h: height * 0.68, spread: 85 },
+        { x: width * 0.84, y: height * 0.84, h: height * 0.58, spread: 70 },
+        { x: width * 0.76, y: height * 0.70, h: height * 0.46, spread: 52 },
+        { x: width * 0.68, y: height * 0.56, h: height * 0.32, spread: 36 }
+      ];
+      rightTreeRoots.forEach(t => drawSilhouetteTree(t.x, t.y, t.h, t.spread, 0.92));
+
+      // Overarching canopy branches at top
+      ctx.strokeStyle = 'rgba(3, 8, 14, 0.85)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(width * 0.15, height * 0.12, width * 0.28, height * 0.18, width * 0.35, height * 0.12);
+      ctx.moveTo(width, 0);
+      ctx.bezierCurveTo(width * 0.85, height * 0.14, width * 0.72, height * 0.20, width * 0.62, height * 0.14);
+      ctx.stroke();
+      ctx.restore();
+
+      // 4. SURREAL ROADSIDE BILLBOARD (눈 덮인 겨울 숲속 거대 전광판)
+      ctx.save();
+      const bbW = Math.min(width * 0.26, 280);
+      const bbH = bbW * 0.58;
+      const bbX = width * 0.70;
+      const bbY = height * 0.26;
+
+      // Heavy industrial support mast in snow
+      ctx.fillStyle = '#070b12';
+      ctx.fillRect(bbX + bbW * 0.45, bbY + bbH, 12, height * 0.45);
+      ctx.strokeStyle = '#101928';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bbX + bbW * 0.45, bbY + bbH, 12, height * 0.45);
+
+      // Billboard Chassis & Bezel
+      const sBezel = 6;
+      ctx.fillStyle = '#060a10';
+      ctx.fillRect(bbX - sBezel, bbY - sBezel, bbW + sBezel * 2, bbH + sBezel * 2);
+      ctx.strokeStyle = '#1b2a3d';
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(bbX - sBezel, bbY - sBezel, bbW + sBezel * 2, bbH + sBezel * 2);
+
+      // Fresh white snow accumulated on top bezel
+      ctx.fillStyle = '#d8ebf8';
+      ctx.beginPath();
+      ctx.roundRect(bbX - sBezel - 2, bbY - sBezel - 5, bbW + sBezel * 2 + 4, 5, 2);
+      ctx.fill();
+
+      // RENDER THE BILLBOARD SCREEN (Video or Dreamcore loop)
+      renderBillboardScreen(bbX, bbY, bbW, bbH, timeNow, true);
+
+      // Ambient Cold Blue Screen Spill on the Snow & Forest
+      const sGlow = ctx.createRadialGradient(bbX + bbW / 2, bbY + bbH / 2, bbW * 0.25, bbX + bbW / 2, bbY + bbH / 2, bbW * 0.95);
+      sGlow.addColorStop(0, 'rgba(112, 193, 179, 0.12)');
+      sGlow.addColorStop(0.5, 'rgba(160, 198, 232, 0.08)');
+      sGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = sGlow;
+      ctx.fillRect(bbX - 80, bbY - 80, bbW + 160, bbH + 160);
+      ctx.restore();
+
+      // 5. SOLITARY SILHOUETTE FIGURE (중앙 안개 속 고독한 인물 - 원본 이미지 완벽 재현)
+      ctx.save();
+      const figX = vx + 6;
+      const figY = vy + 28;
+      const figH = 46;
+
+      // Soft rim glow behind the figure
+      const figGlow = ctx.createRadialGradient(figX, figY - figH * 0.5, 2, figX, figY - figH * 0.5, 26);
+      figGlow.addColorStop(0, 'rgba(160, 198, 232, 0.35)');
+      figGlow.addColorStop(1, 'rgba(160, 198, 232, 0)');
+      ctx.fillStyle = figGlow;
+      ctx.beginPath();
+      ctx.arc(figX, figY - figH * 0.5, 26, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Figure silhouette (slender lone walker facing away into deep mist)
+      ctx.fillStyle = '#03080e';
+      // Head
+      ctx.beginPath();
+      ctx.arc(figX, figY - figH + 6, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Coat / Torso
+      ctx.beginPath();
+      ctx.moveTo(figX - 6, figY - figH + 12);
+      ctx.lineTo(figX + 6, figY - figH + 12);
+      ctx.lineTo(figX + 7, figY - 14);
+      ctx.lineTo(figX - 7, figY - 14);
+      ctx.closePath();
+      ctx.fill();
+
+      // Legs walking
+      ctx.lineWidth = 3.2;
+      ctx.strokeStyle = '#03080e';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      // Left leg
+      ctx.moveTo(figX - 3, figY - 14);
+      ctx.lineTo(figX - 4, figY);
+      // Right leg slightly stepped forward
+      ctx.moveTo(figX + 3, figY - 14);
+      ctx.lineTo(figX + 2, figY - 2);
+      ctx.stroke();
+
+      // Soft ground contact shadow
+      ctx.fillStyle = 'rgba(2, 5, 8, 0.7)';
+      ctx.beginPath();
+      ctx.ellipse(figX, figY + 1, 9, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 6. FLOATING MINIMALIST TYPOGRAPHY "d r e a m s c a p e" (원본 이미지 동일)
+      ctx.save();
+      ctx.font = '200 13px "Courier New", monospace';
+      ctx.fillStyle = 'rgba(160, 205, 235, 0.38)';
+      ctx.textAlign = 'center';
+
+      // Spaced characters across the midground
+      const word = "d r e a m s c a p e";
+      ctx.fillText(word, width * 0.5, height * 0.50);
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       11. Weather Particles Loop (Gentle Falling Snow or Drizzle)
+       ========================================================================== */
+    function updateRainAndMist(timeNow) {
+      if (state.scene === 'snowRoad') {
+        // GENTLE SNOW PARTICLES (부드러운 함박눈 & 싸락눈)
+        ctx.save();
+        state.snowFlakes.forEach(f => {
+          // Horizontal flutter sway
+          const sway = Math.sin(timeNow * f.swaySpeed + f.swayOffset) * f.swayAmp;
+          f.x += sway;
+          f.y += f.speed;
+
+          if (f.y > height) {
+            f.y = -6;
+            f.x = Math.random() * width;
+          }
+          if (f.x > width) f.x = 0;
+          if (f.x < 0) f.x = width;
+
+          // Snow flake gradient circle
+          const snowGrad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.radius);
+          snowGrad.addColorStop(0, `rgba(240, 248, 255, ${f.alpha})`);
+          snowGrad.addColorStop(0.6, `rgba(180, 215, 245, ${f.alpha * 0.7})`);
+          snowGrad.addColorStop(1, 'rgba(180, 215, 245, 0)');
+
+          ctx.fillStyle = snowGrad;
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+
+      } else if (state.scene !== 'theater') {
+        // Melancholic Drizzle for other outdoor scenes
+        ctx.strokeStyle = 'rgba(213, 166, 189, 0.28)';
+        ctx.lineWidth = 1.1;
+        ctx.lineCap = 'round';
+
+        state.rainDrops.forEach(d => {
+          ctx.beginPath();
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(d.x - 1.5, d.y + d.length);
+          ctx.stroke();
+
+          d.y += d.speed;
+          d.x -= 0.8;
+
+          if (d.y > height) {
+            d.y = -d.length;
+            d.x = Math.random() * width + 40;
+          }
+        });
+      }
+
+      // Memory Dust & Projector Motes
+      state.mistDust.forEach(m => {
+        m.x += m.vx;
+        m.y += m.vy;
+
+        if (m.x > width) m.x = -10;
+        if (m.y < 0) m.y = height;
+        if (m.y > height) m.y = 0;
+
+        let alpha = m.alpha * 0.65;
+        let pColor = '246, 200, 143';
+
+        if (state.scene === 'theater') {
+          const scrCenterX = width * 0.5;
+          const distToBeamCenter = Math.abs(m.x - scrCenterX);
+          if (distToBeamCenter < width * 0.30 && m.y < height * 0.7) {
+            alpha = Math.min(alpha * 1.8, 0.85);
+            pColor = '225, 240, 255';
+          }
+        } else if (state.scene === 'snowRoad') {
+          pColor = '180, 215, 245';
+          alpha = m.alpha * 0.45;
+        }
+
+        ctx.fillStyle = `rgba(${pColor}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    /* ==========================================================================
+       12. Master Render Loop (60-144 FPS)
+       ========================================================================== */
+    function render(timeNow) {
+      if (state.scene === 'seaRails') {
+        drawSeaRailsScene(timeNow);
+      } else if (state.scene === 'telephone') {
+        drawTelephoneScene(timeNow);
+      } else if (state.scene === 'platform') {
+        drawPlatformScene(timeNow);
+      } else if (state.scene === 'theater') {
+        drawTheaterScene(timeNow);
+      } else if (state.scene === 'snowRoad') {
+        drawSnowRoadScene(timeNow);
+      }
+
+      updateRainAndMist(timeNow);
+      requestAnimationFrame(render);
+    }
+
+    /* ==========================================================================
+       13. Interactive Event Handlers
+       ========================================================================== */
+    btnPlayPause.addEventListener('click', togglePlay);
+    btnNext.addEventListener('click', playNextTrack);
+    btnPrev.addEventListener('click', playPrevTrack);
+
+    btnLoop.addEventListener('click', () => {
+      state.isLooping = !state.isLooping;
+      btnLoop.classList.toggle('active', state.isLooping);
+      showToast(state.isLooping ? '🔁 한 곡 반복 켜짐' : '🔁 한 곡 반복 꺼짐');
+    });
+
+    function switchScene(s) {
+      state.scene = s;
+      Object.keys(sceneButtons).forEach(other => {
+        if (sceneButtons[other]) sceneButtons[other].classList.remove('active');
+      });
+      if (sceneButtons[s]) sceneButtons[s].classList.add('active');
+      melancholicDeck.updateFX();
+      showToast(`풍경 전환: ${sceneButtons[s].innerText}`);
+    }
+
+    Object.keys(sceneButtons).forEach(s => {
+      if (sceneButtons[s]) {
+        sceneButtons[s].addEventListener('click', () => switchScene(s));
+      }
+    });
+
+    btnSlowedReverb.addEventListener('click', () => {
+      state.slowedReverb = !state.slowedReverb;
+      btnSlowedReverb.classList.toggle('active', state.slowedReverb);
+      melancholicDeck.updateFX();
+      showToast(state.slowedReverb ? '🌙 SLOWED + REVERB 활성화' : '정상 속도 복귀');
+    });
+
+    btnRainSound.addEventListener('click', () => {
+      state.rainEnabled = !state.rainEnabled;
+      btnRainSound.classList.toggle('active', state.rainEnabled);
+      melancholicDeck.updateFX();
+      showToast(state.rainEnabled ? '🌧️ 날씨 소리 켜짐' : '날씨 소리 꺼짐');
+    });
+
+    btnTapeHiss.addEventListener('click', () => {
+      state.tapeHissEnabled = !state.tapeHissEnabled;
+      btnTapeHiss.classList.toggle('active', state.tapeHissEnabled);
+      melancholicDeck.updateFX();
+      showToast(state.tapeHissEnabled ? '📻 테이프 잡음 켜짐' : '테이프 잡음 꺼짐');
+    });
+
+    volSlider.addEventListener('input', (e) => {
+      state.masterVolume = parseFloat(e.target.value);
+      melancholicDeck.setVolume(state.masterVolume);
+    });
+
+    trackSlider.addEventListener('input', (e) => {
+      if (mediaPlayer.duration && !melancholicDeck.isSynthPlaying) {
+        mediaPlayer.currentTime = (parseFloat(e.target.value) / 100) * mediaPlayer.duration;
+      }
+    });
+
+    btnTogglePlaylist.addEventListener('click', () => playlistDrawer.classList.toggle('open'));
+    btnClosePlaylist.addEventListener('click', () => playlistDrawer.classList.remove('open'));
+
+    function toggleZenMode() {
+      state.zenMode = !state.zenMode;
+      document.body.classList.toggle('zen-mode', state.zenMode);
+      showToast(state.zenMode ? '👁️ 감상 모드 (단축키 [H]로 다시 표시)' : '기본 모드로 복귀');
+    }
+    btnZenMode.addEventListener('click', toggleZenMode);
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'v' || e.key === 'V') {
+        fileInput.click();
+      } else if (e.key === '1') {
+        switchScene('seaRails');
+      } else if (e.key === '2') {
+        switchScene('telephone');
+      } else if (e.key === '3') {
+        switchScene('platform');
+      } else if (e.key === '4') {
+        switchScene('theater');
+      } else if (e.key === '5') {
+        switchScene('snowRoad');
+      } else if (e.key === 'p' || e.key === 'P') {
+        playlistDrawer.classList.toggle('open');
+      } else if (e.key === 'h' || e.key === 'H') {
+        toggleZenMode();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    // Check URL Hash on launch
+    if (window.location.hash === '#cinema' || window.location.hash === '#theater') {
+      switchScene('theater');
+    } else if (window.location.hash === '#snow' || window.location.hash === '#snowroad' || window.location.hash === '#dreamscape') {
+      switchScene('snowRoad');
+    }
+
+    // Auto-init
+    resizeCanvas();
+    renderPlaylistUI();
+    requestAnimationFrame(render);
+    showToast('🌧️ 기억의 잔상. [5]를 눌러 눈 내리는 숲길을 감상해보세요.');
+  </script>
+</body>
+</html>

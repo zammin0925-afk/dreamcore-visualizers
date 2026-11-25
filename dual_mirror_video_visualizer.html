@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 DUAL MIRROR VIDEO SPECTRUM 🎬</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+body,html{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff}
+
+/* Master Viewport Container (Applies Reactive Zoom & Shake via GPU) */
+#viewport{
+  position:relative;width:100%;height:100%;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  transform-origin:center center;
+  will-change:transform,filter;
+}
+
+/* Video Stage (Main Hero Element) */
+#video-stage{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  z-index:1;background:#000;
+}
+#main-video{
+  width:100%;height:100%;object-fit:cover;display:block;
+  transition:object-fit 0.2s;
+}
+
+/* Procedural Video Canvas (Used when playing MP3 or Demo without MP4) */
+#procedural-bg-canvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:none;z-index:1;
+}
+
+/* Video Vignette & Cinematic Letterbox Overlay */
+#cinematic-overlay{
+  position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.7) 100%);
+}
+
+/* Flash Strobe Overlay */
+#flash-layer{
+  position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;
+  background:#fff;opacity:0;mix-blend-mode:screen;
+}
+
+/* Spectrum Canvas (Overlaid right on top of video) */
+#spectrum-canvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  z-index:4;pointer-events:none;
+}
+
+/* Drag & Drop Overlay */
+#drop-overlay{
+  position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(14px);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.25s;border:3px dashed #ff0055;
+}
+#drop-overlay.active{opacity:1;pointer-events:auto}
+#drop-overlay h2{font-size:2.2rem;color:#ff0055;margin-bottom:10px;letter-spacing:1px;text-shadow:0 0 30px #ff0055}
+#drop-overlay p{font-size:1.05rem;color:#aaa}
+
+/* UI Elements */
+.ui-layer{
+  position:absolute;z-index:20;transition:opacity 0.35s ease,transform 0.35s ease;
+}
+.ui-hidden{opacity:0!important;pointer-events:none!important;transform:translateY(12px)}
+
+/* Top Header Bar */
+header.ui-layer{
+  top:18px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;
+}
+.brand-badge{
+  display:flex;align-items:center;gap:12px;background:rgba(8,8,14,0.75);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,0.12);padding:9px 16px;border-radius:24px;pointer-events:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+}
+.pulse-circle{width:11px;height:11px;border-radius:50%;background:#ff0055;box-shadow:0 0 12px #ff0055;animation:pulseDot 1.2s infinite}
+@keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:0.5}}
+.brand-title{font-size:1rem;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#fff,#ff0055 60%,#00f3ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.file-info{font-size:0.8rem;color:#94a3b8;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.header-tools{display:flex;gap:8px;pointer-events:auto}
+.btn{
+  background:rgba(15,15,25,0.75);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);
+  color:#f1f5f9;padding:8px 14px;font-size:0.82rem;font-weight:700;border-radius:10px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.btn:hover{background:rgba(40,20,35,0.85);border-color:#ff0055;color:#fff;box-shadow:0 0 16px rgba(255,0,85,0.5);transform:translateY(-2px)}
+.btn.active{background:linear-gradient(135deg,#ff0055,#00f3ff);border-color:transparent;color:#fff;box-shadow:0 0 20px rgba(255,0,85,0.7)}
+
+/* Floating Settings Panel */
+.side-panel{
+  top:80px;right:20px;width:290px;background:rgba(10,10,18,0.85);backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:18px;box-shadow:0 12px 36px rgba(0,0,0,0.7);
+  display:flex;flex-direction:column;gap:14px;pointer-events:auto;
+}
+.side-panel.ui-hidden{transform:translateX(24px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:0.9rem;color:#ff0055;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:6px}
+.setting-row{display:flex;flex-direction:column;gap:5px}
+.setting-label{display:flex;justify-content:space-between;font-size:0.78rem;color:#aaa}
+.setting-label span:last-child{font-family:monospace;color:#ff0055;font-weight:700}
+.range-slider{width:100%;height:5px;background:rgba(255,255,255,0.12);border-radius:3px;outline:none;accent-color:#ff0055;cursor:pointer}
+
+/* Bottom Cinematic Controller */
+.bottom-bar{
+  bottom:22px;left:50%;transform:translateX(-50%);width:min(900px,94%);
+  background:rgba(10,10,18,0.82);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.14);
+  border-radius:18px;padding:14px 22px;box-shadow:0 16px 48px rgba(0,0,0,0.75);display:flex;flex-direction:column;gap:10px;pointer-events:auto;
+}
+.bottom-bar.ui-hidden{transform:translateX(-50%) translateY(24px)!important}
+
+.timeline-row{display:flex;align-items:center;gap:12px;width:100%}
+.time-num{font-size:0.78rem;font-family:monospace;color:#8892b0;min-width:44px}
+.seek-track{flex:1;height:6px;background:rgba(255,255,255,0.12);border-radius:3px;cursor:pointer;position:relative}
+.seek-fill{height:100%;width:0%;background:linear-gradient(90deg,#ff0055,#00f3ff);border-radius:3px;position:relative}
+.seek-fill::after{
+  content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);
+  width:11px;height:11px;border-radius:50%;background:#fff;box-shadow:0 0 10px #ff0055;
+  opacity:0;transition:opacity 0.2s;
+}
+.seek-track:hover .seek-fill::after{opacity:1}
+
+.controls-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.playback-box{display:flex;align-items:center;gap:10px}
+.btn-play-hero{
+  width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ff0055,#00f3ff);border:none;
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;cursor:pointer;
+  box-shadow:0 0 20px rgba(255,0,85,0.5);transition:transform 0.2s;
+}
+.btn-play-hero:hover{transform:scale(1.08)}
+.vol-box{display:flex;align-items:center;gap:6px;margin-left:4px}
+.vol-slider{width:75px;accent-color:#ff0055;cursor:pointer}
+
+.selectors-box{display:flex;align-items:center;gap:8px}
+select{
+  background:rgba(20,20,32,0.9);border:1px solid rgba(255,255,255,0.16);color:#e2e8f0;
+  padding:6px 12px;border-radius:8px;font-size:0.82rem;font-weight:600;outline:none;cursor:pointer;
+}
+select:hover{border-color:#ff0055}
+
+/* Notification Toast */
+#toast{
+  position:absolute;top:74px;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:rgba(15,10,25,0.95);border:1px solid #ff0055;padding:9px 22px;border-radius:24px;
+  font-size:0.88rem;color:#fff;box-shadow:0 0 24px rgba(255,0,85,0.6);pointer-events:none;opacity:0;
+  transition:all 0.3s cubic-bezier(0.16,1,0.3,1);z-index:999;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Keyboard Hint */
+.hint-text{
+  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  font-size:0.7rem;color:rgba(255,255,255,0.3);letter-spacing:0.5px;pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<!-- Reactive Viewport (Video + Overlay + Canvas) -->
+<div id="viewport">
+  <div id="video-stage">
+    <video id="main-video" playsinline loop></video>
+    <canvas id="procedural-bg-canvas"></canvas>
+  </div>
+  <div id="cinematic-overlay"></div>
+  <div id="flash-layer"></div>
+  <canvas id="spectrum-canvas"></canvas>
+</div>
+
+<!-- Drag & Drop Zone -->
+<div id="drop-overlay">
+  <h2>🎬 MP4 영상 또는 음원 파일을 여기에 드롭하세요! 🎬</h2>
+  <p>영상에 완벽히 동기화된 듀얼 미러 스펙트럼과 사운드 리액티브 바운스가 시작됩니다</p>
+</div>
+
+<div id="toast">알림</div>
+
+<!-- Top Navigation -->
+<header class="ui-layer">
+  <div class="brand-badge">
+    <div class="pulse-circle"></div>
+    <div>
+      <div class="brand-title">DUAL MIRROR VIDEO</div>
+      <div class="file-info" id="file-name">MP4 비디오를 드롭하거나 데모를 켜보세요</div>
+    </div>
+  </div>
+  <div class="header-tools">
+    <input type="file" id="file-input" accept="video/mp4,video/webm,audio/*" style="display:none">
+    <button class="btn" id="btn-open-file"><span style="font-size:1rem">📁</span> 영상/음원 열기</button>
+    <button class="btn" id="btn-pc-audio" title="PC 전체 사운드 실시간 캡처"><span style="font-size:1rem">🖥️</span> PC 소리</button>
+    <button class="btn" id="btn-demo" title="내장 퐁크 비트 & 시네마틱 비디오"><span style="font-size:1rem">⚡</span> 데모 재생</button>
+    <button class="btn" id="btn-fit-mode" title="비디오 채우기(Cover) / 원본비율(Contain)">📐 화면 채움</button>
+    <button class="btn" id="btn-toggle-panel" title="이펙트 설정">⚙️</button>
+    <button class="btn" id="btn-fullscreen" title="전체화면 (F)">⛶</button>
+  </div>
+</header>
+
+<!-- Floating FX Settings Panel -->
+<div class="ui-layer side-panel" id="side-panel">
+  <div class="panel-head">
+    <span>DUAL MIRROR FX</span>
+    <span style="font-size:0.75rem;color:#888;">영상 특화 엔진</span>
+  </div>
+
+  <!-- Video Zoom Intensity -->
+  <div class="setting-row">
+    <div class="setting-label"><span>영상 비트 줌 (Video Zoom)</span><span id="txt-zoom">1.4x</span></div>
+    <input type="range" class="range-slider" id="slider-zoom" min="0" max="2.5" step="0.05" value="1.4">
+  </div>
+
+  <!-- Camera Shake Intensity -->
+  <div class="setting-row">
+    <div class="setting-label"><span>화면 흔들림 (Screen Shake)</span><span id="txt-shake">1.3x</span></div>
+    <input type="range" class="range-slider" id="slider-shake" min="0" max="3.0" step="0.05" value="1.3">
+  </div>
+
+  <!-- Bass Sensitivity -->
+  <div class="setting-row">
+    <div class="setting-label"><span>베이스 반응 감도 (Bass Sens)</span><span id="txt-sens">1.8x</span></div>
+    <input type="range" class="range-slider" id="slider-sens" min="0.5" max="3.5" step="0.1" value="1.8">
+  </div>
+
+  <!-- Spectrum Size / Height -->
+  <div class="setting-row">
+    <div class="setting-label"><span>미러 스펙트럼 높이 (Height)</span><span id="txt-height">1.2x</span></div>
+    <input type="range" class="range-slider" id="slider-height" min="0.5" max="2.5" step="0.05" value="1.2">
+  </div>
+
+  <!-- Bar Width / Spacing -->
+  <div class="setting-row">
+    <div class="setting-label"><span>바 굵기 (Bar Width)</span><span id="txt-bar-width">5px</span></div>
+    <input type="range" class="range-slider" id="slider-bar-width" min="2" max="14" step="1" value="5">
+  </div>
+
+  <!-- Glow Bloom -->
+  <div class="setting-row">
+    <div class="setting-label"><span>네온 발광 (Glow Bloom)</span><span id="txt-glow">1.5x</span></div>
+    <input type="range" class="range-slider" id="slider-glow" min="0" max="3.0" step="0.1" value="1.5">
+  </div>
+</div>
+
+<!-- Bottom Control Dock -->
+<div class="ui-layer bottom-bar" id="bottom-bar">
+  <div class="timeline-row">
+    <span class="time-num" id="time-curr">00:00</span>
+    <div class="seek-track" id="seek-bar">
+      <div class="seek-fill" id="seek-fill"></div>
+    </div>
+    <span class="time-num" id="time-total">00:00</span>
+  </div>
+
+  <div class="controls-row">
+    <div class="playback-box">
+      <button class="btn-play-hero" id="btn-play">▶</button>
+      <div class="vol-box">
+        <span style="font-size:0.9rem;color:#888;">🔊</span>
+        <input type="range" class="vol-slider" id="slider-vol" min="0" max="1" step="0.01" value="0.85">
+      </div>
+    </div>
+
+    <div class="selectors-box">
+      <!-- Dual Mirror Style Selector -->
+      <select id="sel-mirror-style" title="듀얼 미러 형태">
+        <option value="center-wings" selected>🦋 센터 윙 미러 (Center Wings - 퐁크 추천)</option>
+        <option value="center-quad">💠 쿼드 미러 (Center Quad - 상하좌우 4중 대칭)</option>
+        <option value="bottom-mirror">⚓ 바텀 듀얼 미러 (Bottom Deck - 영화 하단)</option>
+        <option value="vertical-split">⚡ 버티컬 스플릿 (Vertical Split - 좌우 기둥)</option>
+        <option value="wave-ribbon">🌊 듀얼 웨이브 리본 (Dual Wave Ribbon)</option>
+      </select>
+
+      <!-- Color Theme Selector -->
+      <select id="sel-color-theme" title="색상 테마">
+        <option value="phonk-blood" selected>💀 퐁크 블러드 (Crimson & Orange)</option>
+        <option value="cyber-cyan">⚡ 사이버 시안 (Cyan & Purple)</option>
+        <option value="synth-sunset">🌅 신스 선셋 (Gold & Magenta)</option>
+        <option value="toxic-matrix">🧪 토식 매트릭스 (Neon Green & White)</option>
+        <option value="pure-ice">❄️ 퓨어 화이트 & 아이스 (Minimal White)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="hint-text ui-layer">[Space] 재생/정지 | [F] 전체화면 | [H] UI 숨김/표시 | [마우스 휠] 볼륨 | [더블클릭] 영상 맞춤 전환</div>
+
+<script>
+/**
+ * =========================================================================
+ * ULTRA DUAL MIRROR VIDEO SPECTRUM ENGINE
+ * - Video-centric architecture: Hardware accelerated CSS 3D reactive transform
+ * - Zero video frame copying latency; plays 4K 60FPS smoothly
+ * - Dedicated 5 Dual-Mirror Spectrum Presets
+ * - Sub-bass / Kick impulse detector with spring physics bounce
+ * - Synchronous MP4 Video/Audio decoding + Procedural video generator
+ * =========================================================================
+ */
+
+const $ = id => document.getElementById(id);
+const viewport = $('viewport');
+const mainVideo = $('main-video');
+const procCanvas = $('procedural-bg-canvas');
+const procCtx = procCanvas.getContext('2d');
+const specCanvas = $('spectrum-canvas');
+const specCtx = specCanvas.getContext('2d');
+const flashLayer = $('flash-layer');
+const dropOverlay = $('drop-overlay');
+const toastEl = $('toast');
+
+// UI DOMs
+const fileInput = $('file-input');
+const btnOpenFile = $('btn-open-file'), btnPcAudio = $('btn-pc-audio'), btnDemo = $('btn-demo');
+const btnFitMode = $('btn-fit-mode'), btnTogglePanel = $('btn-toggle-panel'), btnFullscreen = $('btn-fullscreen');
+const btnPlay = $('btn-play'), sidePanel = $('side-panel'), bottomBar = $('bottom-bar');
+const fileNameEl = $('file-name'), timeCurrEl = $('time-curr'), timeTotalEl = $('time-total');
+const seekBar = $('seek-bar'), seekFill = $('seek-fill'), sliderVol = $('slider-vol');
+const selMirrorStyle = $('sel-mirror-style'), selColorTheme = $('sel-color-theme');
+
+// FX Sliders
+const sliderZoom = $('slider-zoom'), sliderShake = $('slider-shake'), sliderSens = $('slider-sens');
+const sliderHeight = $('slider-height'), sliderBarWidth = $('slider-bar-width'), sliderGlow = $('slider-glow');
+const txtZoom = $('txt-zoom'), txtShake = $('txt-shake'), txtSens = $('txt-sens');
+const txtHeight = $('txt-height'), txtBarWidth = $('txt-bar-width'), txtGlow = $('txt-glow');
+
+// --- Engine Configuration ---
+const config = {
+  zoomStrength: 1.4,
+  shakeStrength: 1.3,
+  bassSensitivity: 1.8,
+  spectrumHeight: 1.2,
+  barWidth: 5,
+  glowStrength: 1.5,
+  mirrorStyle: 'center-wings',
+  colorTheme: 'phonk-blood',
+  objectFit: 'cover',
+  volume: 0.85
+};
+
+// --- Color Palettes ---
+const themes = {
+  'phonk-blood': {
+    primary: '#ff003c', secondary: '#ff6600', accent: '#ffe600',
+    peak: '#ffffff', glow: 'rgba(255, 0, 60, 0.7)'
+  },
+  'cyber-cyan': {
+    primary: '#00f3ff', secondary: '#9d00ff', accent: '#ffe600',
+    peak: '#00ffff', glow: 'rgba(0, 243, 255, 0.7)'
+  },
+  'synth-sunset': {
+    primary: '#ff8800', secondary: '#ff007b', accent: '#00f3ff',
+    peak: '#ffffaa', glow: 'rgba(255, 136, 0, 0.7)'
+  },
+  'toxic-matrix': {
+    primary: '#00ff66', secondary: '#00f3ff', accent: '#99ff00',
+    peak: '#ffffff', glow: 'rgba(0, 255, 102, 0.7)'
+  },
+  'pure-ice': {
+    primary: '#ffffff', secondary: '#88ddff', accent: '#00f3ff',
+    peak: '#ffffff', glow: 'rgba(255, 255, 255, 0.7)'
+  }
+};
+
+// --- Audio & Signal Processing ---
+let audioCtx = null;
+let masterGain = null;
+let analyser = null;
+let audioSourceNode = null;
+let audioBuffer = null;
+let isPlaying = false;
+let startTime = 0;
+let pausedAt = 0;
+let isVideoSource = false;
+let isLiveMic = false;
+let liveStream = null;
+
+const FFT_SIZE = 1024;
+let freqData = new Uint8Array(FFT_SIZE / 2);
+let timeData = new Uint8Array(FFT_SIZE / 2);
+
+// Bass & Spring Physics
+let bassEnergy = 0, bassAvg = 0;
+let zoomSpring = { val: 0, vel: 0 };
+let shakeSpring = { val: 0, vel: 0 };
+let flashIntensity = 0;
+
+// Dual Mirror Peak Falloff Arrays (up to 128 pairs)
+const PEAK_BARS = 128;
+let peakHeights = new Float32Array(PEAK_BARS);
+let peakVelocities = new Float32Array(PEAK_BARS);
+
+let width = 0, height = 0, cx = 0, cy = 0;
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2800);
+}
+
+// ---- Audio Pipeline Setup ----
+function initAudio() {
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AudioContext();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = config.volume;
+  masterGain.connect(audioCtx.destination);
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = FFT_SIZE;
+  analyser.smoothingTimeConstant = 0.76; // reactive response
+}
+
+// Spring physics update
+function updateSpring(spr, target, stiff = 0.16, damp = 0.70) {
+  const force = (target - spr.val) * stiff;
+  spr.vel = (spr.vel + force) * damp;
+  spr.val += spr.vel;
+}
+
+// ---- File Loader (Video MP4 or Audio MP3) ----
+async function loadMediaFile(file) {
+  initAudio();
+  showToast(`파일 로드 중: ${file.name}`);
+  fileNameEl.textContent = file.name;
+
+  const isVideo = file.type.startsWith('video/') || file.name.endsWith('.mp4') || file.name.endsWith('.webm');
+
+  if (isVideo) {
+    isVideoSource = true;
+    procCanvas.style.display = 'none';
+    mainVideo.style.display = 'block';
+
+    const videoUrl = URL.createObjectURL(file);
+    mainVideo.src = videoUrl;
+    mainVideo.currentTime = 0;
+    mainVideo.load();
+
+    // Hook audio from video
+    const reader = new FileReader();
+    reader.onload = e => {
+      audioCtx.decodeAudioData(e.target.result, buffer => {
+        audioBuffer = buffer;
+        timeTotalEl.textContent = fmtTime(buffer.duration);
+        playMedia(0);
+        showToast(`🎬 비디오 & 사운드 동기화 완료!`);
+      }, err => {
+        showToast('오디오 디코딩 실패 (비디오 자체 재생)');
+        playVideoOnly();
+      });
+    };
+    reader.readAsArrayBuffer(file);
+
+  } else {
+    // Audio file only: Start Procedural Neon Video Generator on procedural canvas!
+    isVideoSource = false;
+    mainVideo.style.display = 'none';
+    procCanvas.style.display = 'block';
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      audioCtx.decodeAudioData(e.target.result, buffer => {
+        audioBuffer = buffer;
+        timeTotalEl.textContent = fmtTime(buffer.duration);
+        playMedia(0);
+        showToast(`🎵 음원 로드 완료 (시네마틱 배경 구동)`);
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function playMedia(offset = 0) {
+  if (!audioBuffer) return;
+  stopAudioSource();
+
+  audioSourceNode = audioCtx.createBufferSource();
+  audioSourceNode.buffer = audioBuffer;
+  audioSourceNode.connect(analyser);
+  analyser.connect(masterGain);
+
+  audioSourceNode.onended = () => {
+    if (isPlaying && (audioCtx.currentTime - startTime >= audioBuffer.duration - 0.2)) {
+      isPlaying = false;
+      btnPlay.textContent = '▶';
+      pausedAt = 0;
+      if (isVideoSource) mainVideo.pause();
+    }
+  };
+
+  audioSourceNode.start(0, offset);
+  startTime = audioCtx.currentTime - offset;
+  pausedAt = 0;
+  isPlaying = true;
+  btnPlay.textContent = '⏸';
+
+  if (isVideoSource) {
+    mainVideo.currentTime = offset;
+    mainVideo.play().catch(() => {});
+  }
+}
+
+function playVideoOnly() {
+  mainVideo.play();
+  isPlaying = true;
+  btnPlay.textContent = '⏸';
+}
+
+function stopAudioSource() {
+  if (audioSourceNode) {
+    try {
+      audioSourceNode.stop();
+      audioSourceNode.disconnect();
+    } catch(e){}
+    audioSourceNode = null;
+  }
+}
+
+function togglePlayPause() {
+  if (currentDemoInterval) {
+    toggleDemo();
+    return;
+  }
+  if (isLiveMic) {
+    stopLiveCapture();
+    return;
+  }
+  if (!audioBuffer && !isVideoSource) {
+    showToast('MP4 비디오를 드롭하거나 ⚡데모를 켜보세요!');
+    return;
+  }
+  if (isPlaying) {
+    pausedAt = audioCtx.currentTime - startTime;
+    stopAudioSource();
+    if (isVideoSource) mainVideo.pause();
+    isPlaying = false;
+    btnPlay.textContent = '▶';
+  } else {
+    playMedia(pausedAt);
+  }
+}
+
+// ---- Live PC Audio / Screen Sound Capture ----
+async function startLiveCapture() {
+  initAudio();
+  stopAudioSource();
+  stopDemo();
+  stopLiveCapture();
+
+  isPlaying = false;
+  btnPlay.textContent = '▶';
+
+  try {
+    showToast('화면 공유 창에서 반드시 [시스템 오디오 공유]를 체크하세요!');
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+
+    liveStream = stream;
+    isLiveMic = true;
+    btnPcAudio.classList.add('active');
+    fileNameEl.textContent = '🖥️ PC 시스템 사운드 실시간 캡처 중';
+    timeTotalEl.textContent = 'LIVE';
+
+    // If screen video track exists, we can even show the user screen as the background video!
+    if (stream.getVideoTracks().length > 0) {
+      mainVideo.srcObject = stream;
+      mainVideo.style.display = 'block';
+      procCanvas.style.display = 'none';
+      mainVideo.play();
+      isVideoSource = true;
+    }
+
+    const micSource = audioCtx.createMediaStreamSource(stream);
+    micSource.connect(analyser);
+    // Do not connect to masterGain to prevent loopback howling!
+
+    showToast('🖥️ PC 사운드 & 비디오 실시간 듀얼 미러 활성화!');
+  } catch(e) {
+    showToast('오디오 연결 취소 또는 실패');
+    stopLiveCapture();
+  }
+}
+
+function stopLiveCapture() {
+  if (liveStream) {
+    liveStream.getTracks().forEach(t => t.stop());
+    liveStream = null;
+  }
+  isLiveMic = false;
+  btnPcAudio.classList.remove('active');
+  fileNameEl.textContent = '대기 중';
+  mainVideo.srcObject = null;
+}
+
+// ---- Phonk Demo Generator (Zero Asset EDM / Drift Synth) ----
+let currentDemoInterval = null;
+let demoStep = 0;
+
+function synthPhonkKick(t) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.frequency.setValueAtTime(190, t);
+  o.frequency.exponentialRampToValueAtTime(32, t + 0.22);
+  g.gain.setValueAtTime(1.5, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+  o.connect(g); g.connect(analyser); g.connect(masterGain);
+  o.start(t); o.stop(t + 0.46);
+}
+
+function synth808Sub(t, freq) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(freq, t);
+  o.frequency.exponentialRampToValueAtTime(freq * 0.7, t + 0.32);
+  g.gain.setValueAtTime(1.2, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.36);
+  o.connect(g); g.connect(analyser); g.connect(masterGain);
+  o.start(t); o.stop(t + 0.38);
+}
+
+function synthCowbell(t, freq = 560) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'square';
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(0.35, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  o.connect(g); g.connect(analyser); g.connect(masterGain);
+  o.start(t); o.stop(t + 0.12);
+}
+
+function synthHiHat(t) {
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.04, audioCtx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const n = audioCtx.createBufferSource(); n.buffer = buf;
+  const f = audioCtx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7500;
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.35, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+  n.connect(f); f.connect(g); g.connect(analyser); g.connect(masterGain);
+  n.start(t); n.stop(t + 0.05);
+}
+
+function toggleDemo() {
+  initAudio();
+  if (currentDemoInterval) {
+    stopDemo();
+    return;
+  }
+  stopAudioSource();
+  stopLiveCapture();
+
+  // Run Procedural Cyber Drift Video Generator on Canvas
+  isVideoSource = false;
+  mainVideo.style.display = 'none';
+  procCanvas.style.display = 'block';
+
+  isPlaying = true;
+  btnDemo.classList.add('active');
+  btnPlay.textContent = '⏸';
+  fileNameEl.textContent = '⚡ PHONK DRIFT DEMO (138 BPM 808 Reactor)';
+  timeTotalEl.textContent = 'LOOP';
+
+  const subNotes = [36.7, 36.7, 43.6, 32.7, 36.7, 36.7, 49.0, 43.6];
+  const bellNotes = [560, 620, 560, 840, 560, 620, 740, 560];
+  const stepTime = 60 / 138 / 4;
+  let nextTime = audioCtx.currentTime + 0.05;
+
+  currentDemoInterval = setInterval(() => {
+    while (nextTime < audioCtx.currentTime + 0.15) {
+      const s = demoStep % 16;
+      // Heavy 808 Kick on 0, 4, 8, 10
+      if (s === 0 || s === 4 || s === 8 || s === 10) synthPhonkKick(nextTime);
+      // Sub Bass
+      if (s === 0 || s === 8) synth808Sub(nextTime, subNotes[Math.floor(demoStep / 8) % subNotes.length]);
+      // Phonk Cowbell on 2, 6, 12
+      if (s === 2 || s === 6 || s === 12) synthCowbell(nextTime, bellNotes[Math.floor(demoStep / 2) % bellNotes.length]);
+      // Hi-Hat roll
+      if (s % 2 === 0 || s >= 12) synthHiHat(nextTime);
+
+      nextTime += stepTime;
+      demoStep++;
+    }
+  }, 25);
+  showToast('⚡ 퐁크 데모 구동 중! 듀얼 미러 윙 폭발을 체감하세요!');
+}
+
+function stopDemo() {
+  if (currentDemoInterval) {
+    clearInterval(currentDemoInterval);
+    currentDemoInterval = null;
+  }
+  btnDemo.classList.remove('active');
+  isPlaying = false;
+  btnPlay.textContent = '▶';
+  fileNameEl.textContent = '대기 중';
+  showToast('데모 정지');
+}
+
+// ---- Bass Detection & Impact Engine ----
+function analyzeAudio() {
+  if (!analyser) return;
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+
+  // Deep Sub & Kick Bins (20Hz ~ 180Hz)
+  const nyquist = audioCtx.sampleRate / 2;
+  const binHz = nyquist / freqData.length;
+  const kickEndBin = Math.min(Math.ceil(180 / binHz), 24);
+
+  let bassSum = 0;
+  for (let i = 1; i <= kickEndBin; i++) bassSum += freqData[i];
+  bassEnergy = (bassSum / kickEndBin) / 255; // 0.0 ~ 1.0
+
+  // Dynamic threshold & moving average
+  bassAvg = bassAvg * 0.88 + bassEnergy * 0.12;
+  const delta = (bassEnergy - bassAvg) * config.bassSensitivity;
+
+  // Bass Drop / Kick Punch Trigger
+  if (delta > 0.12 && bassEnergy > 0.32) {
+    const strength = Math.min(1.0, delta * 2.4);
+
+    // Zoom Spring impulse (expands video)
+    zoomSpring.vel += strength * 1.6 * config.zoomStrength;
+
+    // Camera Shake impulse
+    shakeSpring.vel += strength * 1.8 * config.shakeStrength;
+
+    // Flash Strobe on big drops
+    if (delta > 0.22) {
+      flashIntensity = Math.min(0.65, delta * 1.5);
+    }
+  }
+
+  // Smooth spring physics updates
+  updateSpring(zoomSpring, 0, 0.15, 0.70);
+  updateSpring(shakeSpring, 0, 0.16, 0.68);
+  flashIntensity *= 0.85;
+}
+
+// ---- Procedural Cyber Drift Background (For MP3s or Demo) ----
+let procTime = 0;
+function renderProceduralBg() {
+  if (procCanvas.style.display === 'none') return;
+  procTime += 0.015 + bassEnergy * 0.04;
+
+  const pw = procCanvas.width, ph = procCanvas.height;
+  const pcx = pw / 2, pcy = ph / 2;
+
+  // Dark deep gradient
+  const grad = procCtx.createRadialGradient(pcx, pcy, 50, pcx, pcy, Math.max(pw, ph) * 0.7);
+  grad.addColorStop(0, '#100512');
+  grad.addColorStop(0.6, '#08020a');
+  grad.addColorStop(1, '#000002');
+  procCtx.fillStyle = grad;
+  procCtx.fillRect(0, 0, pw, ph);
+
+  // 3D Cyber Horizon Grid
+  const horizon = ph * 0.55;
+  procCtx.save();
+  procCtx.strokeStyle = 'rgba(255, 0, 60, 0.22)';
+  procCtx.lineWidth = 1.5;
+  const gridOff = (procTime * (50 + bassEnergy * 150)) % 60;
+
+  procCtx.beginPath();
+  for (let x = -pw; x < pw * 2; x += 70) {
+    procCtx.moveTo(pcx, horizon);
+    procCtx.lineTo(x, ph);
+  }
+  procCtx.stroke();
+
+  procCtx.beginPath();
+  for (let y = horizon; y < ph; y += (y - horizon) * 0.22 + 5) {
+    const ay = y + gridOff * ((y - horizon) / ph);
+    if (ay > ph) continue;
+    procCtx.moveTo(0, ay);
+    procCtx.lineTo(pw, ay);
+  }
+  procCtx.stroke();
+  procCtx.restore();
+}
+
+// =========================================================================
+// 5 DEDICATED DUAL-MIRROR SPECTRUM RENDERERS
+// =========================================================================
+
+// --- STYLE 1: Center Wings (Left-Right & Top-Bottom Butterfly Mirror) ---
+function drawCenterWings(theme) {
+  const bars = 48; // 48 pairs (96 bars total)
+  const barW = config.barWidth;
+  const spacing = 3;
+  const totalW = bars * (barW + spacing);
+  const maxH = height * 0.38 * config.spectrumHeight;
+  const zVal = Math.abs(zoomSpring.val);
+
+  specCtx.save();
+
+  // Dual glow center energy blast
+  const coreR = 40 + bassEnergy * 100 + zVal * 70;
+  const coreGrad = specCtx.createRadialGradient(cx, cy, 10, cx, cy, coreR);
+  coreGrad.addColorStop(0, `${theme.primary}55`);
+  coreGrad.addColorStop(0.5, `${theme.secondary}22`);
+  coreGrad.addColorStop(1, 'transparent');
+  specCtx.fillStyle = coreGrad;
+  specCtx.beginPath();
+  specCtx.arc(cx, cy, coreR, 0, Math.PI * 2);
+  specCtx.fill();
+
+  for (let i = 0; i < bars; i++) {
+    // Map frequency (Sub-bass at center, Highs towards outer wings)
+    const freqIdx = Math.floor(Math.pow(i / bars, 1.4) * (freqData.length * 0.65));
+    const raw = (freqData[freqIdx] || 0) / 255;
+    const isBass = i < bars * 0.22;
+    const val = Math.min(1.0, raw * (isBass ? 1.45 : 1.0));
+    const h = Math.max(4, val * maxH * (1 + zVal * 0.5));
+
+    // Distance from center
+    const dist = (i * (barW + spacing)) + 12;
+
+    // Coordinates: Right and Left
+    const rx = cx + dist;
+    const lx = cx - dist - barW;
+
+    // Dual Gradient for Right Wing
+    const grad = specCtx.createLinearGradient(0, cy - h, 0, cy + h);
+    grad.addColorStop(0, theme.primary);
+    grad.addColorStop(0.5, theme.secondary);
+    grad.addColorStop(1, theme.primary);
+    specCtx.fillStyle = grad;
+
+    // Symmetrical Top and Bottom Draw
+    // Right Bar
+    specCtx.fillRect(rx, cy - h, barW, h * 2);
+    // Left Bar
+    specCtx.fillRect(lx, cy - h, barW, h * 2);
+
+    // Peak Falloff Tracking
+    if (val * maxH > peakHeights[i]) {
+      peakHeights[i] = val * maxH;
+      peakVelocities[i] = 0;
+    } else {
+      peakVelocities[i] += 0.45;
+      peakHeights[i] -= peakVelocities[i];
+      if (peakHeights[i] < 0) peakHeights[i] = 0;
+    }
+
+    // Peak Dots (Top & Bottom on both wings)
+    const pyTop = cy - peakHeights[i] - 5;
+    const pyBtm = cy + peakHeights[i] + 3;
+
+    specCtx.fillStyle = theme.peak;
+    // Right peaks
+    specCtx.fillRect(rx, pyTop, barW, 2);
+    specCtx.fillRect(rx, pyBtm, barW, 2);
+    // Left peaks
+    specCtx.fillRect(lx, pyTop, barW, 2);
+    specCtx.fillRect(lx, pyBtm, barW, 2);
+  }
+
+  specCtx.restore();
+}
+
+// --- STYLE 2: Center Quad Mirror (4-Way Cross Mirror) ---
+function drawCenterQuad(theme) {
+  const bars = 36;
+  const barW = config.barWidth;
+  const maxH = Math.min(width, height) * 0.32 * config.spectrumHeight;
+  const zVal = Math.abs(zoomSpring.val);
+
+  specCtx.save();
+  specCtx.translate(cx, cy);
+
+  for (let i = 0; i < bars; i++) {
+    const fi = Math.floor(Math.pow(i / bars, 1.3) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const h = Math.max(3, val * maxH * (1 + zVal * 0.45));
+    const offset = i * (barW + 3) + 16;
+
+    specCtx.fillStyle = i % 2 === 0 ? theme.primary : theme.secondary;
+
+    // 4 Symmetrical quadrants
+    // Top-Right & Top-Left
+    specCtx.fillRect(offset, -h, barW, h);
+    specCtx.fillRect(-offset - barW, -h, barW, h);
+    // Bottom-Right & Bottom-Left
+    specCtx.fillRect(offset, 0, barW, h);
+    specCtx.fillRect(-offset - barW, 0, barW, h);
+  }
+  specCtx.restore();
+}
+
+// --- STYLE 3: Bottom Dual Mirror (Classic Deck Symmetrical Horizon) ---
+function drawBottomMirror(theme) {
+  const bars = 56;
+  const barW = (width * 0.46) / bars;
+  const maxH = height * 0.38 * config.spectrumHeight;
+  const baseY = height * 0.94;
+  const zVal = Math.abs(zoomSpring.val);
+
+  specCtx.save();
+  for (let i = 0; i < bars; i++) {
+    const fi = Math.floor(Math.pow(i / bars, 1.4) * (freqData.length * 0.65));
+    const val = (freqData[fi] || 0) / 255;
+    const h = Math.max(4, val * maxH * (1 + zVal * 0.5));
+
+    // Distance outwards from center
+    const rx = cx + (i * barW) + 6;
+    const lx = cx - ((i + 1) * barW) - 6;
+
+    const grad = specCtx.createLinearGradient(0, baseY - h, 0, baseY);
+    grad.addColorStop(0, theme.primary);
+    grad.addColorStop(0.7, theme.secondary);
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    specCtx.fillStyle = grad;
+
+    // Draw Right and Left Mirror Bars
+    specCtx.fillRect(rx, baseY - h, barW - 2, h);
+    specCtx.fillRect(lx, baseY - h, barW - 2, h);
+
+    // Peak dots
+    if (val * maxH > peakHeights[i]) {
+      peakHeights[i] = val * maxH;
+      peakVelocities[i] = 0;
+    } else {
+      peakVelocities[i] += 0.4;
+      peakHeights[i] -= peakVelocities[i];
+      if (peakHeights[i] < 0) peakHeights[i] = 0;
+    }
+
+    const py = baseY - peakHeights[i] - 4;
+    specCtx.fillStyle = theme.peak;
+    specCtx.fillRect(rx, py, barW - 2, 2.5);
+    specCtx.fillRect(lx, py, barW - 2, 2.5);
+  }
+  specCtx.restore();
+}
+
+// --- STYLE 4: Vertical Split (Left & Right Screen Pillars) ---
+function drawVerticalSplit(theme) {
+  const bars = 40;
+  const barH = (height * 0.75) / bars;
+  const maxW = width * 0.22 * config.spectrumHeight;
+  const startY = (height - (bars * barH)) / 2;
+  const zVal = Math.abs(zoomSpring.val);
+
+  specCtx.save();
+  for (let i = 0; i < bars; i++) {
+    const fi = Math.floor(Math.pow(i / bars, 1.3) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const w = Math.max(4, val * maxW * (1 + zVal * 0.45));
+    const y = startY + i * barH;
+
+    specCtx.fillStyle = theme.primary;
+    // Left edge bar
+    specCtx.fillRect(0, y, w, barH - 2);
+    // Right edge bar (Mirrored from right border)
+    specCtx.fillRect(width - w, y, w, barH - 2);
+  }
+  specCtx.restore();
+}
+
+// --- STYLE 5: Dual Wave Ribbon (Smooth Symmetrical Curves) ---
+function drawDualWaveRibbon(theme) {
+  const points = 48;
+  const sliceW = (width * 0.48) / points;
+  const maxH = height * 0.28 * config.spectrumHeight;
+  const zVal = Math.abs(zoomSpring.val);
+
+  specCtx.save();
+  specCtx.lineWidth = 3.5;
+  specCtx.strokeStyle = theme.primary;
+
+  // Upper & Lower Symmetrical Wave
+  specCtx.beginPath();
+  // Right Wing
+  for (let i = 0; i < points; i++) {
+    const fi = Math.floor(Math.pow(i / points, 1.4) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const y = cy - (val * maxH * (1 + zVal * 0.5));
+    const x = cx + i * sliceW;
+    if (i === 0) specCtx.moveTo(x, y);
+    else specCtx.lineTo(x, y);
+  }
+  specCtx.stroke();
+
+  // Bottom Mirrored Right Wing
+  specCtx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const fi = Math.floor(Math.pow(i / points, 1.4) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const y = cy + (val * maxH * (1 + zVal * 0.5));
+    const x = cx + i * sliceW;
+    if (i === 0) specCtx.moveTo(x, y);
+    else specCtx.lineTo(x, y);
+  }
+  specCtx.stroke();
+
+  // Left Mirrored Wings
+  specCtx.strokeStyle = theme.secondary;
+  specCtx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const fi = Math.floor(Math.pow(i / points, 1.4) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const y = cy - (val * maxH * (1 + zVal * 0.5));
+    const x = cx - i * sliceW;
+    if (i === 0) specCtx.moveTo(x, y);
+    else specCtx.lineTo(x, y);
+  }
+  specCtx.stroke();
+
+  specCtx.beginPath();
+  for (let i = 0; i < points; i++) {
+    const fi = Math.floor(Math.pow(i / points, 1.4) * (freqData.length * 0.6));
+    const val = (freqData[fi] || 0) / 255;
+    const y = cy + (val * maxH * (1 + zVal * 0.5));
+    const x = cx - i * sliceW;
+    if (i === 0) specCtx.moveTo(x, y);
+    else specCtx.lineTo(x, y);
+  }
+  specCtx.stroke();
+
+  specCtx.restore();
+}
+
+// =========================================================================
+// MAIN RENDER LOOP (60-144 FPS Hardware Accelerated)
+// =========================================================================
+let frameCount = 0;
+
+function render() {
+  requestAnimationFrame(render);
+  frameCount++;
+
+  // Analyze sound
+  analyzeAudio();
+
+  const theme = themes[config.colorTheme];
+
+  // 1. Sync Video & Progress
+  if (isPlaying && isVideoSource && mainVideo.duration) {
+    if (frameCount % 4 === 0) {
+      const cur = mainVideo.currentTime;
+      timeCurrEl.textContent = fmtTime(cur);
+      seekFill.style.width = `${(cur / mainVideo.duration) * 100}%`;
+    }
+  } else if (isPlaying && audioBuffer && !isLiveMic && currentDemoInterval === null) {
+    if (frameCount % 4 === 0) {
+      const cur = audioCtx.currentTime - startTime;
+      timeCurrEl.textContent = fmtTime(cur);
+      seekFill.style.width = `${(cur / audioBuffer.duration) * 100}%`;
+    }
+  }
+
+  // 2. Hardware-Accelerated 3D Transform on Master Viewport
+  // (Zero video frame copying lag; video bounces directly via GPU!)
+  const zScale = 1.0 + Math.abs(zoomSpring.val) * 0.16 * config.zoomStrength;
+  const shakeMag = Math.abs(shakeSpring.val) * 18 * config.shakeStrength;
+  const shakeX = (Math.random() - 0.5) * shakeMag;
+  const shakeY = (Math.random() - 0.5) * shakeMag;
+  const shakeRot = (Math.random() - 0.5) * 0.02 * Math.abs(shakeSpring.val) * config.shakeStrength;
+
+  // Apply matrix to entire viewport (Video + Canvas)
+  viewport.style.transform = `translate3d(${shakeX.toFixed(2)}px, ${shakeY.toFixed(2)}px, 0) scale(${zScale.toFixed(3)}) rotate(${shakeRot.toFixed(4)}rad)`;
+
+  // Dynamic Video Filter on Bass Peak (Punch saturation & contrast)
+  if (Math.abs(zoomSpring.val) > 0.15) {
+    const boost = (Math.abs(zoomSpring.val) * 0.25).toFixed(2);
+    viewport.style.filter = `contrast(${1 + parseFloat(boost)}) brightness(${1 + parseFloat(boost) * 0.5})`;
+  } else {
+    viewport.style.filter = 'none';
+  }
+
+  // 3. Strobe Flash Overlay
+  if (flashIntensity > 0.04) {
+    flashLayer.style.opacity = flashIntensity.toFixed(2);
+  } else {
+    flashLayer.style.opacity = '0';
+  }
+
+  // 4. Render Procedural Canvas (if active)
+  renderProceduralBg();
+
+  // 5. Clear Spectrum Canvas
+  specCtx.clearRect(0, 0, width, height);
+
+  // 6. Draw Chosen Dual Mirror Spectrum
+  switch (config.mirrorStyle) {
+    case 'center-quad':
+      drawCenterQuad(theme);
+      break;
+    case 'bottom-mirror':
+      drawBottomMirror(theme);
+      break;
+    case 'vertical-split':
+      drawVerticalSplit(theme);
+      break;
+    case 'wave-ribbon':
+      drawDualWaveRibbon(theme);
+      break;
+    case 'center-wings':
+    default:
+      drawCenterWings(theme);
+      break;
+  }
+}
+
+// ---- Formatting & Helpers ----
+function fmtTime(sec) {
+  if (isNaN(sec) || !isFinite(sec)) return '00:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+// ---- Resize ----
+function resize() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5); // Fast & crisp
+
+  specCanvas.width = width * dpr;
+  specCanvas.height = height * dpr;
+  specCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  procCanvas.width = width;
+  procCanvas.height = height;
+
+  cx = width / 2;
+  cy = height / 2;
+}
+window.addEventListener('resize', resize);
+
+// ---- Event Listeners ----
+btnOpenFile.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) loadMediaFile(e.target.files[0]);
+});
+btnPlay.addEventListener('click', togglePlayPause);
+btnPcAudio.addEventListener('click', () => {
+  if (isLiveMic) stopLiveCapture();
+  else startLiveCapture();
+});
+btnDemo.addEventListener('click', toggleDemo);
+
+// Video Fit Toggle (Cover vs Contain)
+btnFitMode.addEventListener('click', () => {
+  if (config.objectFit === 'cover') {
+    config.objectFit = 'contain';
+    mainVideo.style.objectFit = 'contain';
+    btnFitMode.textContent = '📐 원본 비율';
+    showToast('비디오 모드: 원본 비율 (레터박스)');
+  } else {
+    config.objectFit = 'cover';
+    mainVideo.style.objectFit = 'cover';
+    btnFitMode.textContent = '📐 화면 채움';
+    showToast('비디오 모드: 전체화면 꽉 채움');
+  }
+});
+
+// Fullscreen
+btnFullscreen.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+
+// Settings Panel Toggle
+btnTogglePanel.addEventListener('click', () => {
+  sidePanel.classList.toggle('ui-hidden');
+});
+
+// Volume
+sliderVol.addEventListener('input', e => {
+  config.volume = parseFloat(e.target.value);
+  if (masterGain) masterGain.gain.value = config.volume;
+  mainVideo.volume = config.volume;
+});
+window.addEventListener('wheel', e => {
+  if (e.target.closest('.side-panel') || e.target.closest('select')) return;
+  config.volume = Math.max(0, Math.min(1, config.volume - Math.sign(e.deltaY) * 0.05));
+  sliderVol.value = config.volume;
+  if (masterGain) masterGain.gain.value = config.volume;
+  mainVideo.volume = config.volume;
+});
+
+// Selectors
+selMirrorStyle.addEventListener('change', e => config.mirrorStyle = e.target.value);
+selColorTheme.addEventListener('change', e => config.colorTheme = e.target.value);
+
+// Sliders binding
+sliderZoom.addEventListener('input', e => {
+  config.zoomStrength = parseFloat(e.target.value);
+  txtZoom.textContent = config.zoomStrength.toFixed(2) + 'x';
+});
+sliderShake.addEventListener('input', e => {
+  config.shakeStrength = parseFloat(e.target.value);
+  txtShake.textContent = config.shakeStrength.toFixed(2) + 'x';
+});
+sliderSens.addEventListener('input', e => {
+  config.bassSensitivity = parseFloat(e.target.value);
+  txtSens.textContent = config.bassSensitivity.toFixed(1) + 'x';
+});
+sliderHeight.addEventListener('input', e => {
+  config.spectrumHeight = parseFloat(e.target.value);
+  txtHeight.textContent = config.spectrumHeight.toFixed(2) + 'x';
+});
+sliderBarWidth.addEventListener('input', e => {
+  config.barWidth = parseInt(e.target.value);
+  txtBarWidth.textContent = config.barWidth + 'px';
+});
+sliderGlow.addEventListener('input', e => {
+  config.glowStrength = parseFloat(e.target.value);
+  txtGlow.textContent = config.glowStrength.toFixed(1) + 'x';
+});
+
+// Seek Bar
+seekBar.addEventListener('click', e => {
+  const rect = seekBar.getBoundingClientRect();
+  const ratio = (e.clientX - rect.left) / rect.width;
+  if (isVideoSource && mainVideo.duration) {
+    mainVideo.currentTime = ratio * mainVideo.duration;
+  }
+  if (audioBuffer) {
+    playMedia(ratio * audioBuffer.duration);
+  }
+});
+
+// Drag and drop
+window.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropOverlay.classList.add('active');
+});
+window.addEventListener('dragleave', e => {
+  if (e.clientX <= 0 || e.clientY <= 0) dropOverlay.classList.remove('active');
+});
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('active');
+  if (e.dataTransfer.files.length) loadMediaFile(e.dataTransfer.files[0]);
+});
+
+// Auto-hide UI on inactivity
+let uiTimer = null, uiActive = true;
+const uiNodes = document.querySelectorAll('.ui-layer');
+function pingUI() {
+  if (!uiActive) {
+    uiNodes.forEach(el => el.classList.remove('ui-hidden'));
+    document.body.style.cursor = 'default';
+    uiActive = true;
+  }
+  clearTimeout(uiTimer);
+  uiTimer = setTimeout(() => {
+    if (isPlaying) {
+      uiNodes.forEach(el => el.classList.add('ui-hidden'));
+      document.body.style.cursor = 'none';
+      uiActive = false;
+    }
+  }, 3800);
+}
+window.addEventListener('mousemove', pingUI);
+
+// Keyboard Shortcuts
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  pingUI();
+  if (e.code === 'Space') {
+    e.preventDefault();
+    togglePlayPause();
+  } else if (e.key === 'f' || e.key === 'F') {
+    btnFullscreen.click();
+  } else if (e.key === 'h' || e.key === 'H') {
+    uiActive = !uiActive;
+    uiNodes.forEach(el => el.classList.toggle('ui-hidden', !uiActive));
+  } else if (e.key === 'd' || e.key === 'D') {
+    toggleDemo();
+  }
+});
+
+// Double click to toggle Fit Mode
+window.addEventListener('dblclick', e => {
+  if (e.target.closest('.ui-layer')) return;
+  btnFitMode.click();
+});
+
+// Initialize
+resize();
+render();
+</script>
+</body>
+</html>

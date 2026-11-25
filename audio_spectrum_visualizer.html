@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 PHONK BASS REACTOR 🔥</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+body,html{width:100%;height:100%;overflow:hidden;background:#000;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff}
+#canvas-container{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1}
+canvas{display:block;width:100%;height:100%}
+#bg-video{display:none;position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+#drop-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;border:3px dashed #ff003c}
+#drop-overlay.active{opacity:1;pointer-events:auto}
+#drop-overlay h2{font-size:2.4rem;color:#ff003c;text-shadow:0 0 40px #ff003c,0 0 80px rgba(255,0,60,0.4);margin-bottom:12px;letter-spacing:2px}
+#drop-overlay p{font-size:1.1rem;color:#888}
+.ui-layer{position:absolute;z-index:10;transition:opacity .4s ease,transform .4s ease}
+.ui-hidden{opacity:0!important;pointer-events:none!important;transform:translateY(15px)}
+header.ui-layer{top:20px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.logo-badge{display:flex;align-items:center;gap:12px;background:rgba(10,0,0,0.7);backdrop-filter:blur(14px);border:1px solid rgba(255,0,60,0.3);padding:10px 18px;border-radius:30px;box-shadow:0 8px 32px rgba(0,0,0,0.6);pointer-events:auto}
+.pulse-dot{width:12px;height:12px;border-radius:50%;background:#ff003c;box-shadow:0 0 14px #ff003c;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.5}}
+.logo-title{font-weight:900;font-size:1.1rem;letter-spacing:3px;background:linear-gradient(135deg,#fff,#ff003c 50%,#ff6600);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.track-info{font-size:.85rem;color:#777;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:10px;pointer-events:auto}
+.btn{background:rgba(15,5,5,0.75);backdrop-filter:blur(10px);border:1px solid rgba(255,0,60,0.25);color:#ddd;padding:9px 16px;font-size:.88rem;font-weight:600;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .25s cubic-bezier(.16,1,.3,1);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.btn:hover{background:rgba(60,10,10,0.85);border-color:#ff003c;color:#fff;box-shadow:0 0 20px rgba(255,0,60,0.5);transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn.active{background:linear-gradient(135deg,#ff003c,#ff6600);border-color:transparent;color:#fff;box-shadow:0 0 25px rgba(255,0,60,0.7)}
+.btn-icon{font-size:1.1rem}
+.bottom-bar{bottom:24px;left:50%;transform:translateX(-50%);width:min(960px,94%);background:rgba(8,2,2,0.8);backdrop-filter:blur(20px);border:1px solid rgba(255,0,60,0.2);border-radius:20px;padding:16px 24px;box-shadow:0 15px 40px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);display:flex;flex-direction:column;gap:12px}
+.bottom-bar.ui-hidden{transform:translateX(-50%) translateY(30px)!important}
+.progress-container{display:flex;align-items:center;gap:12px;width:100%}
+.time-label{font-size:.8rem;font-family:monospace;color:#666;min-width:42px}
+.slider-track{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:4px;position:relative;cursor:pointer}
+.slider-progress{height:100%;background:linear-gradient(90deg,#ff003c,#ff6600);border-radius:4px;width:0%;position:relative}
+.slider-progress::after{content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 10px #ff003c;opacity:0;transition:opacity .2s}
+.slider-track:hover .slider-progress::after{opacity:1}
+.control-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.playback-controls{display:flex;align-items:center;gap:10px}
+.play-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#ff003c,#ff6600);border:none;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;box-shadow:0 0 20px rgba(255,0,60,0.5);transition:transform .2s,box-shadow .2s}
+.play-btn:hover{transform:scale(1.1);box-shadow:0 0 30px rgba(255,100,0,0.7)}
+.volume-box{display:flex;align-items:center;gap:8px;margin-left:6px}
+.volume-slider{width:80px;accent-color:#ff003c;cursor:pointer}
+.preset-selectors{display:flex;align-items:center;gap:8px}
+select{background:rgba(20,5,5,0.9);border:1px solid rgba(255,0,60,0.2);color:#ddd;padding:7px 12px;border-radius:10px;font-size:.85rem;outline:none;cursor:pointer}
+select:hover{border-color:#ff003c}
+.side-panel{top:90px;right:24px;width:300px;background:rgba(8,2,2,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,0,60,0.2);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:16px}
+.side-panel.ui-hidden{transform:translateX(30px)}
+.panel-header{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.95rem;color:#ff003c;border-bottom:1px solid rgba(255,0,60,0.15);padding-bottom:8px}
+.setting-item{display:flex;flex-direction:column;gap:6px}
+.setting-label{display:flex;justify-content:space-between;font-size:.82rem;color:#999}
+.setting-label span:last-child{font-family:monospace;color:#ff003c}
+.range-slider{width:100%;height:5px;background:rgba(255,255,255,.1);border-radius:3px;outline:none;accent-color:#ff6600;cursor:pointer}
+#toast{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(15,2,2,0.92);backdrop-filter:blur(12px);border:1px solid #ff003c;padding:10px 24px;border-radius:30px;font-size:.9rem;color:#fff;box-shadow:0 0 25px rgba(255,0,60,0.6);pointer-events:none;opacity:0;transition:all .3s cubic-bezier(.16,1,.3,1);z-index:999}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.keyboard-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:.72rem;color:rgba(255,255,255,.25);pointer-events:none;letter-spacing:.5px}
+#vignette{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.7) 100%)}
+#flash-overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;opacity:0;transition:none;mix-blend-mode:screen}
+/* CSS scanlines — zero JS cost */
+#scanlines{position:absolute;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;opacity:0;
+background:repeating-linear-gradient(0deg,rgba(0,0,0,0.12) 0px,rgba(0,0,0,0.12) 1px,transparent 1px,transparent 3px)}
+@media(max-width:768px){.side-panel{display:none}.bottom-bar{padding:12px 16px}.logo-title{font-size:.9rem}}
+</style>
+</head>
+<body>
+<video id="bg-video" playsinline loop muted></video>
+<div id="canvas-container"><canvas id="visualizer-canvas"></canvas></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="flash-overlay"></div>
+<div id="drop-overlay">
+  <h2>🎵 MP3 / MP4 파일을 여기에 드롭! 🎵</h2>
+  <p>퐁크, 힙합, EDM — 베이스 드롭에 화면이 미쳐 날뜁니다</p>
+</div>
+<div id="toast">msg</div>
+
+<header class="ui-layer">
+  <div class="logo-badge">
+    <div class="pulse-dot" id="live-dot"></div>
+    <div>
+      <div class="logo-title">PHONK BASS REACTOR</div>
+      <div class="track-info" id="track-name">파일 드롭 또는 데모 비트를 시작하세요</div>
+    </div>
+  </div>
+  <div class="top-actions">
+    <input type="file" id="file-input" accept="audio/*,video/mp4,video/webm" style="display:none">
+    <button class="btn" id="btn-open-file" title="MP3/MP4 파일 열기"><span class="btn-icon">📁</span> 파일</button>
+    <button class="btn" id="btn-mic" title="마이크/PC 소리 감지"><span class="btn-icon">🎙️</span> PC소리</button>
+    <button class="btn" id="btn-demo" title="내장 퐁크 데모 비트"><span class="btn-icon">⚡</span> 데모</button>
+    <button class="btn" id="btn-toggle-settings"><span class="btn-icon">⚙️</span></button>
+    <button class="btn" id="btn-fullscreen"><span class="btn-icon">⛶</span></button>
+  </div>
+</header>
+
+<div class="ui-layer side-panel" id="side-panel">
+  <div class="panel-header"><span>PHONK FX ENGINE</span><span style="font-size:.75rem;color:#666">실시간</span></div>
+  <div class="setting-item"><div class="setting-label"><span>베이스 줌 폭발</span><span id="val-zoom">1.5x</span></div><input type="range" class="range-slider" id="slider-zoom" min="0" max="3.0" step="0.05" value="1.5"></div>
+  <div class="setting-item"><div class="setting-label"><span>화면 흔들림</span><span id="val-shake">1.5x</span></div><input type="range" class="range-slider" id="slider-shake" min="0" max="4.0" step="0.05" value="1.5"></div>
+  <div class="setting-item"><div class="setting-label"><span>베이스 감도</span><span id="val-sensitivity">1.8x</span></div><input type="range" class="range-slider" id="slider-sensitivity" min="0.5" max="4.0" step="0.1" value="1.8"></div>
+  <div class="setting-item"><div class="setting-label"><span>글로우 & 글리치</span><span id="val-glow">1.5x</span></div><input type="range" class="range-slider" id="slider-glow" min="0" max="3.0" step="0.1" value="1.5"></div>
+  <div class="setting-item"><div class="setting-label"><span>파티클 양</span><span id="val-particles">200</span></div><input type="range" class="range-slider" id="slider-particles" min="50" max="500" step="10" value="200"></div>
+  <div class="setting-item"><div class="setting-label"><span>VHS 그레인 (Phonk Vibe)</span><span id="val-vhs">0.5x</span></div><input type="range" class="range-slider" id="slider-vhs" min="0" max="1.5" step="0.05" value="0.5"></div>
+  <div class="setting-item"><div class="setting-label"><span>컬러 반전 (Drop Invert)</span><span id="val-invert">ON</span></div><input type="range" class="range-slider" id="slider-invert" min="0" max="1" step="1" value="1"></div>
+</div>
+
+<div class="ui-layer bottom-bar" id="bottom-bar">
+  <div class="progress-container">
+    <span class="time-label" id="current-time">00:00</span>
+    <div class="slider-track" id="progress-bar"><div class="slider-progress" id="progress-fill"></div></div>
+    <span class="time-label" id="total-time">00:00</span>
+  </div>
+  <div class="control-row">
+    <div class="playback-controls">
+      <button class="play-btn" id="btn-play">▶</button>
+      <div class="volume-box">
+        <span style="font-size:1rem;color:#666">🔊</span>
+        <input type="range" class="volume-slider" id="slider-volume" min="0" max="1" step="0.01" value="0.8">
+      </div>
+    </div>
+    <div class="preset-selectors">
+      <select id="select-vis-mode">
+        <option value="phonk" selected>💀 퐁크 스펙트럼</option>
+        <option value="radial">🌀 원형 펄스 링</option>
+        <option value="cyberpunk">⚡ 사이버 바</option>
+        <option value="wave">🌊 리퀴드 웨이브</option>
+        <option value="mirror">🪞 듀얼 미러</option>
+      </select>
+      <select id="select-bg-mode">
+        <option value="warp" selected>🚀 워프 스타필드</option>
+        <option value="grid">🌐 사이버 그리드</option>
+        <option value="nebula">🌌 오로라 플라즈마</option>
+        <option value="bloodmoon">🩸 블러드문</option>
+        <option value="video">🎥 비디오 배경</option>
+        <option value="dark">🌑 다크</option>
+      </select>
+      <select id="select-theme">
+        <option value="phonk" selected>💀 퐁크 블러드</option>
+        <option value="cyber">네온 사이버</option>
+        <option value="synthwave">신스웨이브</option>
+        <option value="matrix">매트릭스</option>
+        <option value="inferno">인페르노</option>
+        <option value="plasma">바이올렛</option>
+        <option value="rainbow">레인보우</option>
+      </select>
+    </div>
+  </div>
+</div>
+<div class="keyboard-hint ui-layer">[Space] 재생/일시정지 | [F] 전체화면 | [H] UI 숨기기 | [D] 데모 비트</div>
+
+<script>
+// =====================================================================
+// PHONK BASS REACTOR ENGINE v3.0 — PERFORMANCE OPTIMIZED
+// =====================================================================
+// Perf fixes vs v2:
+// 1. NO getImageData/putImageData — VHS grain via pre-rendered offscreen canvas
+// 2. Scanlines via pure CSS overlay — zero JS draw cost
+// 3. shadowBlur ONLY on glow pass, not per-bar — single glow rect
+// 4. Gradient objects cached & reused (not created per bar per frame)
+// 5. Stars batched into single path per frame
+// 6. Sparks: no per-trail save/restore, max cap enforced
+// 7. Chromatic aberration uses CSS filter (single GPU op) not canvas readback
+// 8. Canvas at 1x DPR on high-DPI (opt-in 2x) — 4x fewer pixels
+// 9. requestAnimationFrame-only, DOM updates throttled to every 4th frame
+// =====================================================================
+
+const canvas = document.getElementById('visualizer-canvas');
+const ctx = canvas.getContext('2d', { alpha: false }); // opaque = faster compositing
+const bgVideo = document.getElementById('bg-video');
+const fileInput = document.getElementById('file-input');
+const flashOverlay = document.getElementById('flash-overlay');
+const scanlineEl = document.getElementById('scanlines');
+const canvasContainer = document.getElementById('canvas-container');
+
+const $ = id => document.getElementById(id);
+const btnOpenFile=$('btn-open-file'),btnMic=$('btn-mic'),btnDemo=$('btn-demo');
+const btnPlay=$('btn-play'),btnFullscreen=$('btn-fullscreen'),btnToggleSettings=$('btn-toggle-settings');
+const sidePanel=$('side-panel'),dropOverlay=$('drop-overlay');
+const toastEl=$('toast'),trackNameEl=$('track-name');
+const currentTimeEl=$('current-time'),totalTimeEl=$('total-time');
+const progressBar=$('progress-bar'),progressFill=$('progress-fill');
+const volumeSlider=$('slider-volume');
+const selectVisMode=$('select-vis-mode'),selectBgMode=$('select-bg-mode'),selectTheme=$('select-theme');
+
+// ---- State ----
+let audioCtx=null,analyser=null,gainNode=null,audioSource=null,audioBuffer=null;
+let isPlaying=false,startTime=0,pausedAt=0,currentMode='file',micStream=null;
+
+const FFT_SIZE=2048;
+let freqData,timeData;
+
+// Impact engine
+let bassEnergy=0,midEnergy=0,highEnergy=0;
+let bassAvg=0,prevBassEnergy=0;
+let zoomSpring={value:0,velocity:0};
+let shakeSpring={value:0,velocity:0};
+let strobeFlash=0,glitchEffect=0,invertFlash=0;
+let dropCooldown=0,silenceFrames=0;
+
+// Config
+const config={
+  zoomFactor:1.5,shakeFactor:1.5,sensitivity:1.8,
+  glowFactor:1.5,particleCount:200,volume:0.8,
+  visMode:'phonk',bgMode:'warp',theme:'phonk',
+  vhsAmount:0.5,invertOnDrop:1
+};
+
+// Themes
+const themes={
+  phonk:{primary:'#ff003c',secondary:'#ff6600',accent:'#ffcc00',core:'#ff0022',glow:'#ff003c',bgHue:0},
+  cyber:{primary:'#00f3ff',secondary:'#ff007b',accent:'#ffe600',core:'#00f3ff',glow:'#00f3ff',bgHue:190},
+  synthwave:{primary:'#ff8800',secondary:'#d900ff',accent:'#00ffee',core:'#ff3b00',glow:'#ff8800',bgHue:280},
+  matrix:{primary:'#00ff66',secondary:'#00f3ff',accent:'#99ff00',core:'#00ff88',glow:'#00ff66',bgHue:140},
+  inferno:{primary:'#ff2200',secondary:'#ff9900',accent:'#ffff00',core:'#ff1100',glow:'#ff2200',bgHue:15},
+  plasma:{primary:'#b700ff',secondary:'#3700ff',accent:'#ff00aa',core:'#bf00ff',glow:'#b700ff',bgHue:270},
+  rainbow:{primary:'#ff0055',secondary:'#00f3ff',accent:'#ffdd00',core:'#ffffff',glow:'#ff0055',bgHue:0}
+};
+
+// =====================================================================
+// PRE-RENDERED NOISE TEXTURE (replaces getImageData grain)
+// =====================================================================
+let noiseCanvas, noiseCtx;
+function initNoiseTexture(){
+  noiseCanvas=document.createElement('canvas');
+  noiseCanvas.width=256; noiseCanvas.height=256;
+  noiseCtx=noiseCanvas.getContext('2d');
+  refreshNoise();
+}
+// Regenerate every ~6 frames for variety without per-frame cost
+let noiseFrame=0;
+function refreshNoise(){
+  const img=noiseCtx.createImageData(256,256);
+  const d=img.data;
+  for(let i=0;i<d.length;i+=4){
+    const v=Math.random()*255|0;
+    d[i]=v;d[i+1]=v;d[i+2]=v;d[i+3]=30; // very low alpha
+  }
+  noiseCtx.putImageData(img,0,0);
+}
+
+// =====================================================================
+// PARTICLES — optimized
+// =====================================================================
+// Star pool: pre-allocated, batched draw
+const MAX_STARS=500;
+const starX=new Float32Array(MAX_STARS),starY=new Float32Array(MAX_STARS);
+const starZ=new Float32Array(MAX_STARS),starPZ=new Float32Array(MAX_STARS);
+const starSp=new Float32Array(MAX_STARS);
+let starCount=0;
+
+function resetStar(i,w,h,init){
+  starX[i]=(Math.random()-.5)*w;starY[i]=(Math.random()-.5)*h;
+  starZ[i]=init?Math.random()*1200:1200;starPZ[i]=starZ[i];
+  starSp[i]=Math.random()*.8+.5;
+}
+function initStars(){
+  starCount=Math.min(config.particleCount,MAX_STARS);
+  for(let i=0;i<starCount;i++) resetStar(i,width,height,true);
+}
+function drawStarsBatched(speed,color){
+  ctx.strokeStyle=color;
+  ctx.beginPath(); // single path for ALL stars
+  for(let i=0;i<starCount;i++){
+    starPZ[i]=starZ[i];
+    starZ[i]-=speed*starSp[i];
+    if(starZ[i]<=1) resetStar(i,width,height,false);
+    const sx=(starX[i]/starZ[i])*500+cx;
+    const sy=(starY[i]/starZ[i])*500+cy;
+    const px=(starX[i]/starPZ[i])*500+cx;
+    const py=(starY[i]/starPZ[i])*500+cy;
+    ctx.moveTo(px,py);ctx.lineTo(sx,sy);
+  }
+  ctx.lineWidth=1.5;
+  ctx.stroke();
+}
+
+// Sparks — capped, simplified
+const MAX_SPARKS=80;
+let sparks=[];
+class Spark{
+  constructor(x,y,col,big){
+    this.x=x;this.y=y;this.color=col;
+    const a=Math.random()*Math.PI*2;
+    const spd=big?(Math.random()*20+8):(Math.random()*14+5);
+    this.vx=Math.cos(a)*spd;this.vy=Math.sin(a)*spd;
+    this.alpha=1;this.decay=big?.015:.03;
+    this.size=big?(Math.random()*4+2.5):(Math.random()*3+1.5);
+  }
+  update(){this.x+=this.vx;this.y+=this.vy;this.vx*=.95;this.vy*=.95;this.alpha-=this.decay}
+}
+function drawAllSparks(){
+  if(!sparks.length)return;
+  ctx.save();
+  for(let i=sparks.length-1;i>=0;i--){
+    const s=sparks[i];
+    s.update();
+    if(s.alpha<=0){sparks.splice(i,1);continue}
+    ctx.globalAlpha=s.alpha;
+    ctx.fillStyle=s.color;
+    ctx.fillRect(s.x-s.size*.5,s.y-s.size*.5,s.size,s.size); // rect faster than arc
+  }
+  ctx.restore();
+}
+
+// Shockwaves — max 3
+let shockwaves=[];
+function drawShockwaves(){
+  for(let i=shockwaves.length-1;i>=0;i--){
+    const w=shockwaves[i];
+    w.r+=w.speed;w.alpha=1-w.r/w.maxR;w.speed*=.97;
+    if(w.alpha<=0){shockwaves.splice(i,1);continue}
+    ctx.save();ctx.globalAlpha=w.alpha*.5;
+    ctx.strokeStyle=w.color;ctx.lineWidth=3+w.alpha*6;
+    ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+}
+
+let peakBars=new Float32Array(128),peakFall=new Float32Array(128);
+let width=0,height=0,cx=0,cy=0;
+
+function springUpdate(spr,target,stiff,damp){
+  spr.velocity=(spr.velocity+(target-spr.value)*stiff)*damp;
+  spr.value+=spr.velocity;
+}
+
+// ---- Audio init ----
+function initAudio(){
+  if(!audioCtx){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    analyser=audioCtx.createAnalyser();analyser.fftSize=FFT_SIZE;analyser.smoothingTimeConstant=.75;
+    gainNode=audioCtx.createGain();gainNode.gain.value=config.volume;gainNode.connect(audioCtx.destination);
+    freqData=new Uint8Array(analyser.frequencyBinCount);timeData=new Uint8Array(analyser.frequencyBinCount);
+  }
+  if(audioCtx.state==='suspended')audioCtx.resume();
+}
+function showToast(m){toastEl.textContent=m;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),3000)}
+
+// ---- File / Playback ----
+async function loadAudioFile(file){
+  initAudio();showToast('분석 중: '+file.name);trackNameEl.textContent=file.name;
+  const isVid=file.type.startsWith('video/')||file.name.endsWith('.mp4')||file.name.endsWith('.webm');
+  if(isVid){bgVideo.src=URL.createObjectURL(file);bgVideo.style.display='block';bgVideo.currentTime=0;selectBgMode.value='video';config.bgMode='video'}
+  else{bgVideo.style.display='none';if(config.bgMode==='video'){config.bgMode='warp';selectBgMode.value='warp'}}
+  const r=new FileReader();
+  r.onload=e=>{audioCtx.decodeAudioData(e.target.result,buf=>{audioBuffer=buf;totalTimeEl.textContent=fmtTime(buf.duration);currentMode=isVid?'video':'file';playBuf(0);showToast('🔥 로드 완료: '+file.name)},()=>showToast('디코딩 실패'))};
+  r.readAsArrayBuffer(file);
+}
+function playBuf(off=0){
+  if(!audioBuffer)return;stopSrc();
+  audioSource=audioCtx.createBufferSource();audioSource.buffer=audioBuffer;
+  audioSource.connect(analyser);analyser.connect(gainNode);
+  audioSource.onended=()=>{if(isPlaying&&audioCtx.currentTime-startTime>=audioBuffer.duration-.2){isPlaying=false;btnPlay.textContent='▶';pausedAt=0;if(bgVideo.style.display!=='none')bgVideo.pause()}};
+  audioSource.start(0,off);startTime=audioCtx.currentTime-off;pausedAt=0;isPlaying=true;btnPlay.textContent='⏸';
+  if(currentMode==='video'){bgVideo.currentTime=off;bgVideo.play().catch(()=>{})}
+}
+function stopSrc(){if(audioSource){try{audioSource.stop();audioSource.disconnect()}catch(e){}audioSource=null}}
+function togglePlayPause(){
+  if(currentMode==='demo'){toggleDemo();return}if(currentMode==='mic'){stopMic();return}
+  if(!audioBuffer){showToast('파일을 드롭하거나 ⚡데모 비트를 켜세요!');return}
+  if(isPlaying){pausedAt=audioCtx.currentTime-startTime;stopSrc();isPlaying=false;btnPlay.textContent='▶';if(bgVideo.style.display!=='none')bgVideo.pause()}
+  else playBuf(pausedAt);
+}
+
+// ---- Mic ----
+async function toggleMic(){
+  initAudio();if(currentMode==='mic'){stopMic();return}
+  stopSrc();stopDemo();isPlaying=false;btnPlay.textContent='▶';
+  try{let s;try{s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}catch(e){s=await navigator.mediaDevices.getUserMedia({audio:true})}
+  micStream=s;audioCtx.createMediaStreamSource(s).connect(analyser);
+  currentMode='mic';btnMic.classList.add('active');trackNameEl.textContent='🎙️ 실시간 소리 감지 중...';totalTimeEl.textContent='LIVE';showToast('PC 소리 감지 시작!')}catch(e){showToast('소리 입력 실패')}
+}
+function stopMic(){if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}btnMic.classList.remove('active');currentMode='file';trackNameEl.textContent='대기 중';showToast('감지 중단')}
+
+// ---- Demo Beat ----
+let demoInterval=null,demoStep=0;
+function synth808Kick(t){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(analyser);g.connect(gainNode);o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(30,t+.25);g.gain.setValueAtTime(1.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.start(t);o.stop(t+.52)}
+function synth808Sub(t,f){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.connect(g);g.connect(analyser);g.connect(gainNode);o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.7,t+.3);g.gain.setValueAtTime(1.2,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);o.start(t);o.stop(t+.37)}
+function synthSnare(t){const bs=audioCtx.sampleRate*.15,buf=audioCtx.createBuffer(1,bs,audioCtx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<bs;i++)d[i]=Math.random()*2-1;const n=audioCtx.createBufferSource();n.buffer=buf;const f=audioCtx.createBiquadFilter();f.type='highpass';f.frequency.value=800;const g=audioCtx.createGain();g.gain.setValueAtTime(.8,t);g.gain.exponentialRampToValueAtTime(.01,t+.15);n.connect(f);f.connect(g);g.connect(analyser);g.connect(gainNode);n.start(t);n.stop(t+.17)}
+function synthHat(t){const bs=audioCtx.sampleRate*.05,buf=audioCtx.createBuffer(1,bs,audioCtx.sampleRate),d=buf.getChannelData(0);for(let i=0;i<bs;i++)d[i]=Math.random()*2-1;const n=audioCtx.createBufferSource();n.buffer=buf;const f=audioCtx.createBiquadFilter();f.type='highpass';f.frequency.value=6000;const g=audioCtx.createGain();g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.01,t+.05);n.connect(f);f.connect(g);g.connect(analyser);g.connect(gainNode);n.start(t);n.stop(t+.06)}
+function synthCowbell(t){const o1=audioCtx.createOscillator(),o2=audioCtx.createOscillator(),g=audioCtx.createGain();o1.frequency.value=560;o2.frequency.value=845;o1.type='square';o2.type='square';o1.connect(g);o2.connect(g);g.connect(analyser);g.connect(gainNode);g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.01,t+.08);o1.start(t);o2.start(t);o1.stop(t+.1);o2.stop(t+.1)}
+function toggleDemo(){
+  initAudio();if(currentMode==='demo'){stopDemo();return}
+  stopSrc();stopMic();currentMode='demo';isPlaying=true;btnDemo.classList.add('active');btnPlay.textContent='⏸';
+  trackNameEl.textContent='💀 PHONK DEMO — 808 Sub Bass (140 BPM)';totalTimeEl.textContent='LOOP';
+  const bpm=140,step=60/bpm/4;let nextT=audioCtx.currentTime+.05;
+  const bn=[36.7,36.7,41.2,32.7,36.7,36.7,43.6,41.2];
+  demoInterval=setInterval(()=>{while(nextT<audioCtx.currentTime+.15){const s=demoStep%16;
+    if(s===0||s===4||s===8||s===10)synth808Kick(nextT);
+    if(s===4||s===12)synthSnare(nextT);
+    if(s===0||s===8)synth808Sub(nextT,bn[Math.floor(demoStep/8)%bn.length]);
+    if(s%2===0)synthHat(nextT);if(s===2||s===6)synthCowbell(nextT);
+    nextT+=step;demoStep++}},25);
+  showToast('💀 퐁크 데모 시작!');
+}
+function stopDemo(){if(demoInterval){clearInterval(demoInterval);demoInterval=null}btnDemo.classList.remove('active');isPlaying=false;btnPlay.textContent='▶';currentMode='file';trackNameEl.textContent='대기 중';showToast('데모 정지')}
+
+function fmtTime(s){if(!isFinite(s))return'00:00';const m=Math.floor(s/60),ss=Math.floor(s%60);return`${m<10?'0':''}${m}:${ss<10?'0':''}${ss}`}
+
+// ---- Resize ----
+function resize(){
+  width=window.innerWidth;height=window.innerHeight;
+  // Use 1x DPR for performance; still looks great on most screens
+  const dpr=Math.min(devicePixelRatio,1.5);
+  canvas.width=width*dpr;canvas.height=height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=width/2;cy=height/2;
+  initStars();
+}
+window.addEventListener('resize',resize);
+
+// =====================================================================
+// BASS ANALYSIS
+// =====================================================================
+let cachedBinHz=0;
+function analyzeBeat(){
+  if(!analyser)return;
+  analyser.getByteFrequencyData(freqData);
+  analyser.getByteTimeDomainData(timeData);
+
+  if(!cachedBinHz) cachedBinHz=audioCtx.sampleRate/2/analyser.frequencyBinCount;
+  const binHz=cachedBinHz;
+
+  // Sub-bass 20-100Hz
+  let subSum=0,subC=0;
+  const subLo=Math.floor(20/binHz),subHi=Math.min(Math.ceil(100/binHz),freqData.length-1);
+  for(let i=subLo;i<=subHi;i++){subSum+=freqData[i];subC++}
+  const subBass=subC>0?(subSum/subC)/255:0;
+
+  // Kick 60-200Hz
+  let kickSum=0,kickC=0;
+  const kickLo=Math.floor(60/binHz),kickHi=Math.min(Math.ceil(200/binHz),freqData.length-1);
+  for(let i=kickLo;i<=kickHi;i++){kickSum+=freqData[i];kickC++}
+  const kickBass=kickC>0?(kickSum/kickC)/255:0;
+
+  bassEnergy=Math.max(subBass,kickBass)*.7+(subBass+kickBass)*.5*.3;
+  bassAvg=bassAvg*.88+bassEnergy*.12;
+
+  const totalE=bassEnergy*.6+midEnergy*.3+highEnergy*.1;
+  if(totalE<.15)silenceFrames=Math.min(silenceFrames+1,120);
+  else silenceFrames=Math.max(0,silenceFrames-2);
+  dropCooldown=Math.max(0,dropCooldown-1);
+
+  const bassDelta=(bassEnergy-bassAvg)*config.sensitivity;
+  const isMassive=(bassDelta>.12&&bassEnergy>.35)||(silenceFrames>15&&bassEnergy>.4&&bassDelta>.08);
+  const isSuper=(bassDelta>.22&&bassEnergy>.5)||(silenceFrames>30&&bassEnergy>.5);
+
+  if(isMassive&&dropCooldown<=0){
+    const str=Math.min(1,bassDelta*2.5+(silenceFrames>15?.3:0));
+    zoomSpring.velocity+=str*1.8*config.zoomFactor;
+    shakeSpring.velocity+=str*2*config.shakeFactor;
+    strobeFlash=Math.max(strobeFlash,str*.9);
+    glitchEffect=Math.max(glitchEffect,str*1.2);
+
+    const th=themes[config.theme];
+    const sc=isSuper?25:12;
+    const cols=[th.primary,th.secondary,th.accent,'#fff'];
+    for(let i=0;i<sc&&sparks.length<MAX_SPARKS;i++)
+      sparks.push(new Spark(cx,cy,cols[i&3],isSuper));
+
+    if((isSuper||str>.6)&&shockwaves.length<3)
+      shockwaves.push({x:cx,y:cy,r:0,maxR:Math.min(width,height)*.7,alpha:1,color:th.primary,speed:18});
+    if(isSuper&&config.invertOnDrop)invertFlash=1;
+    dropCooldown=isSuper?8:4;silenceFrames=0;
+  }
+
+  if(bassDelta>.05&&bassEnergy>.25){
+    zoomSpring.velocity+=bassDelta*.6*config.zoomFactor;
+    shakeSpring.velocity+=bassDelta*.5*config.shakeFactor;
+  }
+
+  springUpdate(zoomSpring,0,.12,.72);
+  springUpdate(shakeSpring,0,.14,.68);
+  strobeFlash*=.82;glitchEffect*=.78;invertFlash*=.88;
+  prevBassEnergy=bassEnergy;
+}
+
+// =====================================================================
+// BACKGROUNDS
+// =====================================================================
+function renderBg(theme){
+  const t=performance.now()*.001;
+  if(config.bgMode==='video'&&bgVideo.style.display!=='none'&&!bgVideo.paused){
+    const vr=bgVideo.videoWidth/bgVideo.videoHeight,sr=width/height;
+    let dw=width,dh=height,dx=0,dy=0;
+    if(sr>vr){dh=width/vr;dy=(height-dh)/2}else{dw=height*vr;dx=(width-dw)/2}
+    ctx.drawImage(bgVideo,dx,dy,dw,dh);
+    ctx.fillStyle=`rgba(0,0,0,${.3+bassEnergy*.2})`;ctx.fillRect(0,0,width,height);return;
+  }
+  if(config.bgMode==='warp'){
+    ctx.fillStyle=`rgba(2,1,4,${.4+Math.max(0,.15-bassEnergy*.3)})`;ctx.fillRect(0,0,width,height);
+    drawStarsBatched(10+bassEnergy*80*config.zoomFactor+Math.abs(zoomSpring.value)*150,theme.primary);
+  }else if(config.bgMode==='grid'){
+    ctx.fillStyle='#030108';ctx.fillRect(0,0,width,height);
+    const horizon=height*.5;
+    ctx.save();ctx.strokeStyle=theme.primary;ctx.globalAlpha=.2+bassEnergy*.4;ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for(let x=-width;x<width*2;x+=60){ctx.moveTo(cx,horizon);ctx.lineTo(x,height)}
+    ctx.stroke();
+    const gridOff=(t*(30+bassEnergy*100))%50;
+    ctx.beginPath();
+    for(let y=horizon;y<height;y+=(y-horizon)*.22+5){const ay=y+gridOff*((y-horizon)/height);if(ay>height)continue;ctx.moveTo(0,ay);ctx.lineTo(width,ay)}
+    ctx.stroke();ctx.restore();
+  }else if(config.bgMode==='nebula'){
+    const g=ctx.createRadialGradient(cx+Math.sin(t)*220,cy+Math.cos(t*.7)*160,30,cx,cy,Math.max(width,height)*.8);
+    g.addColorStop(0,`hsla(${theme.bgHue+Math.sin(t)*40},80%,25%,${.15+bassEnergy*.35})`);
+    g.addColorStop(.5,`hsla(${theme.bgHue+80},70%,12%,.12)`);g.addColorStop(1,'#030005');
+    ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+  }else if(config.bgMode==='bloodmoon'){
+    ctx.fillStyle=`rgba(3,0,0,${.5-bassEnergy*.15})`;ctx.fillRect(0,0,width,height);
+    const moonR=60+bassEnergy*40+Math.abs(zoomSpring.value)*80;
+    const mg=ctx.createRadialGradient(cx,cy*.55,moonR*.2,cx,cy*.55,moonR);
+    mg.addColorStop(0,`rgba(255,0,30,${.4+bassEnergy*.5})`);mg.addColorStop(.5,`rgba(180,0,20,${.15+bassEnergy*.2})`);mg.addColorStop(1,'transparent');
+    ctx.fillStyle=mg;ctx.fillRect(0,0,width,height);
+    drawStarsBatched(8+bassEnergy*60+Math.abs(zoomSpring.value)*120,`rgba(255,${80+bassEnergy*120|0},${bassEnergy*60|0},0.8)`);
+  }else{
+    ctx.fillStyle='#020004';ctx.fillRect(0,0,width,height);
+  }
+}
+
+// =====================================================================
+// VISUALIZERS — optimized (fewer gradients, no per-bar shadowBlur)
+// =====================================================================
+
+function drawPhonk(theme){
+  const bars=64; // 64 is plenty, was 80
+  const barW=(width*.88)/bars;
+  const startX=(width-bars*barW)/2;
+  const maxH=height*.48;
+  const baseY=cy+maxH*.25;
+  const zv=Math.abs(zoomSpring.value);
+
+  // Floor glow — single rect
+  const fg=ctx.createLinearGradient(0,baseY,0,baseY+120);
+  fg.addColorStop(0,`rgba(255,0,40,${bassEnergy*.35+zv*.2})`);fg.addColorStop(1,'transparent');
+  ctx.fillStyle=fg;ctx.fillRect(0,baseY,width,120);
+
+  // Pre-create a SINGLE gradient for all bars (vertical, reusable)
+  const barGrad=ctx.createLinearGradient(0,baseY-maxH,0,baseY);
+  barGrad.addColorStop(0,dropCooldown>0?theme.secondary:theme.accent);
+  barGrad.addColorStop(.3,theme.primary);
+  barGrad.addColorStop(1,'rgba(255,0,30,0.05)');
+  ctx.fillStyle=barGrad;
+
+  // Draw all bars WITHOUT shadowBlur
+  for(let i=0;i<bars;i++){
+    const fi=Math.pow(i/bars,1.6)*(freqData.length*.65)|0;
+    const raw=(freqData[fi]||0)/255;
+    const isBass=i<bars*.25;
+    const val=Math.min(1,raw*(isBass?1.4:1));
+    const h=Math.max(5,val*maxH*(1+zv*.6));
+    const x=startX+i*barW;
+    const bw=barW-3;
+    ctx.fillRect(x,baseY-h,bw,h);
+
+    // Peak dot
+    if(val*maxH>peakBars[i]){peakBars[i]=val*maxH;peakFall[i]=0}
+    else{peakFall[i]+=.4;peakBars[i]-=peakFall[i];if(peakBars[i]<0)peakBars[i]=0}
+  }
+
+  // Peak dots — batch as single color
+  ctx.fillStyle=theme.accent;
+  for(let i=0;i<bars;i++){
+    const x=startX+i*barW;
+    ctx.fillRect(x,baseY-peakBars[i]-5,barW-3,3);
+  }
+
+  // Reflection — single semi-transparent pass
+  ctx.save();ctx.globalAlpha=bassEnergy*.15+.05;
+  ctx.fillStyle=theme.primary;
+  for(let i=0;i<bars;i++){
+    const fi=Math.pow(i/bars,1.6)*(freqData.length*.65)|0;
+    const raw=(freqData[fi]||0)/255;
+    const h=Math.max(5,raw*maxH*(1+zv*.6))*.3;
+    ctx.fillRect(startX+i*barW,baseY+2,barW-3,h);
+  }
+  ctx.restore();
+
+  // Glow pass — ONE blurred circle, not per-bar shadow
+  if(config.glowFactor>.1){
+    ctx.save();ctx.globalCompositeOperation='screen';
+    const gr=ctx.createRadialGradient(cx,baseY-maxH*.3,5,cx,baseY-maxH*.3,30+bassEnergy*80+zv*60);
+    gr.addColorStop(0,`rgba(255,0,40,${.15+bassEnergy*.3+zv*.3})`);
+    gr.addColorStop(.5,`rgba(255,50,0,${.05+bassEnergy*.1})`);gr.addColorStop(1,'transparent');
+    ctx.fillStyle=gr;
+    ctx.beginPath();ctx.arc(cx,baseY-maxH*.3,30+bassEnergy*80+zv*60,0,Math.PI*2);ctx.fill();
+    ctx.globalCompositeOperation='source-over';ctx.restore();
+  }
+}
+
+function drawRadial(theme){
+  const baseR=Math.min(width,height)*.18+Math.abs(zoomSpring.value)*50;
+  const bars=80;const step=Math.PI*2/bars;
+  ctx.save();ctx.translate(cx,cy);
+  const cg=ctx.createRadialGradient(0,0,10,0,0,baseR*.95);
+  cg.addColorStop(0,theme.core);cg.addColorStop(.5,theme.secondary);cg.addColorStop(1,'transparent');
+  ctx.fillStyle=cg;ctx.globalAlpha=.3+bassEnergy*.5;
+  ctx.beginPath();ctx.arc(0,0,baseR*.9,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=.8;ctx.strokeStyle=theme.primary;ctx.lineWidth=3+Math.abs(zoomSpring.value)*5;
+  ctx.beginPath();ctx.arc(0,0,baseR,0,Math.PI*2);ctx.stroke();
+  // Batch all radial bars into two paths
+  ctx.lineWidth=3;
+  ctx.strokeStyle=theme.primary;ctx.beginPath();
+  for(let i=0;i<bars;i+=2){const a=i*step;const fi=Math.pow(i<bars/2?i:bars-i,1.2)*1.5|0;const v=(freqData[fi]||0)/255;const len=v*140*(1+Math.abs(zoomSpring.value)*.6)+5;ctx.moveTo(Math.cos(a)*baseR,Math.sin(a)*baseR);ctx.lineTo(Math.cos(a)*(baseR+len),Math.sin(a)*(baseR+len))}
+  ctx.stroke();
+  ctx.strokeStyle=theme.secondary;ctx.beginPath();
+  for(let i=1;i<bars;i+=2){const a=i*step;const fi=Math.pow(i<bars/2?i:bars-i,1.2)*1.5|0;const v=(freqData[fi]||0)/255;const len=v*140*(1+Math.abs(zoomSpring.value)*.6)+5;ctx.moveTo(Math.cos(a)*baseR,Math.sin(a)*baseR);ctx.lineTo(Math.cos(a)*(baseR+len),Math.sin(a)*(baseR+len))}
+  ctx.stroke();ctx.restore();
+}
+
+function drawCyberBars(theme){
+  const bars=64;const barW=(width*.85)/bars;const startX=(width-bars*barW)/2;const maxH=height*.42;const baseY=cy+maxH*.4;
+  const bg=ctx.createLinearGradient(0,baseY-maxH,0,baseY);bg.addColorStop(0,theme.secondary);bg.addColorStop(.6,theme.primary);bg.addColorStop(1,'rgba(0,243,255,0.05)');
+  ctx.fillStyle=bg;
+  for(let i=0;i<bars;i++){const fi=Math.pow(i/bars,1.4)*(freqData.length*.7)|0;const v=(freqData[fi]||0)/255;const h=Math.max(4,v*maxH*(1+Math.abs(zoomSpring.value)*.4));ctx.fillRect(startX+i*barW+2,baseY-h,barW-4,h);
+    if(v*maxH>peakBars[i]){peakBars[i]=v*maxH;peakFall[i]=0}else{peakFall[i]+=.35;peakBars[i]-=peakFall[i];if(peakBars[i]<0)peakBars[i]=0}}
+  ctx.fillStyle=theme.accent;
+  for(let i=0;i<bars;i++)ctx.fillRect(startX+i*barW+2,baseY-peakBars[i]-4,barW-4,3);
+}
+
+function drawWave(theme){
+  const sl=width/(timeData.length*.7);
+  ctx.save();ctx.lineWidth=4+Math.abs(zoomSpring.value)*5;ctx.strokeStyle=theme.primary;
+  ctx.beginPath();let x=0;
+  for(let i=0;i<timeData.length*.7;i++){const v=timeData[i]/128;const y=v*height*.25+cy-height*.125;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);x+=sl}
+  ctx.stroke();
+  ctx.beginPath();x=0;
+  for(let i=0;i<freqData.length*.5;i++){const v=(freqData[i]/255)*height*.3*(1+Math.abs(zoomSpring.value)*.5);if(i===0)ctx.moveTo(x,cy+v);else ctx.lineTo(x,cy+v);x+=width/(freqData.length*.5)}
+  ctx.lineTo(width,height);ctx.lineTo(0,height);ctx.closePath();
+  const wg=ctx.createLinearGradient(0,cy,0,height);wg.addColorStop(0,theme.secondary);wg.addColorStop(1,'transparent');
+  ctx.fillStyle=wg;ctx.globalAlpha=.3+bassEnergy*.3;ctx.fill();ctx.restore();
+}
+
+function drawMirror(theme){
+  const bars=48;const barW=(width*.45)/bars;const maxH=height*.35;
+  ctx.fillStyle=theme.primary;
+  for(let i=0;i<bars;i++){const fi=Math.pow(i/bars,1.3)*(freqData.length*.6)|0;const v=(freqData[fi]||0)/255;const h=Math.max(3,v*maxH*(1+Math.abs(zoomSpring.value)*.5));
+    ctx.fillRect(cx+i*barW+10,cy-h/2,barW-3,h);ctx.fillRect(cx-(i+1)*barW-10,cy-h/2,barW-3,h)}
+}
+
+// =====================================================================
+// POST-FX — GPU-friendly
+// =====================================================================
+function postFX(theme){
+  // VHS grain via pre-rendered noise texture (tiled, single drawImage)
+  if(config.vhsAmount>.05){
+    ctx.save();
+    ctx.globalAlpha=config.vhsAmount*.25+Math.abs(zoomSpring.value)*.08;
+    // Tile the small noise texture across the screen
+    const pat=ctx.createPattern(noiseCanvas,'repeat');
+    ctx.fillStyle=pat;ctx.fillRect(0,0,width,height);
+    ctx.restore();
+    // CSS scanlines opacity
+    scanlineEl.style.opacity=config.vhsAmount*.5;
+  } else {
+    scanlineEl.style.opacity=0;
+  }
+
+  // Chromatic aberration via CSS filter on container (GPU composited, not canvas readback!)
+  if(glitchEffect>.08){
+    // Simple blur+hue shift simulates RGB split at zero JS cost
+    canvasContainer.style.filter=`blur(${glitchEffect*1.5}px) hue-rotate(${glitchEffect*25|0}deg)`;
+  } else if(invertFlash>.05){
+    canvasContainer.style.filter=`invert(${invertFlash*70|0}%) hue-rotate(${invertFlash*60|0}deg)`;
+  } else {
+    canvasContainer.style.filter='';
+  }
+
+  // Strobe flash — just a single fillRect
+  if(strobeFlash>.03){
+    ctx.save();ctx.fillStyle=theme.primary;ctx.globalAlpha=strobeFlash*.3;ctx.fillRect(0,0,width,height);ctx.restore();
+  }
+
+  // Flash overlay (DOM)
+  if(invertFlash>.05){
+    flashOverlay.style.opacity=invertFlash*.5;
+    flashOverlay.style.background=`rgba(255,255,255,${invertFlash*.4})`;
+  }else{
+    flashOverlay.style.opacity=0;
+  }
+}
+
+// =====================================================================
+// MAIN RENDER LOOP
+// =====================================================================
+let frameCount=0;
+function render(){
+  requestAnimationFrame(render);
+  frameCount++;
+
+  analyzeBeat();
+  const theme=themes[config.theme];
+
+  // DOM updates only every 4th frame (saves layout thrashing)
+  if(frameCount%4===0){
+    if(isPlaying&&audioBuffer&&currentMode!=='mic'&&currentMode!=='demo'){
+      const cur=audioCtx.currentTime-startTime;
+      currentTimeEl.textContent=fmtTime(cur);
+      progressFill.style.width=Math.min(100,cur/audioBuffer.duration*100)+'%';
+    }
+  }
+
+  // Refresh noise texture every 6 frames
+  if(config.vhsAmount>.05&&frameCount%6===0){
+    noiseFrame++;refreshNoise();
+  }
+
+  // Camera transform
+  const zoom=1+Math.abs(zoomSpring.value)*.25*config.zoomFactor;
+  const shakeMag=Math.abs(shakeSpring.value)*22*config.shakeFactor;
+  const sx=(Math.random()-.5)*shakeMag;
+  const sy=(Math.random()-.5)*shakeMag;
+  const sr=(Math.random()-.5)*.03*Math.abs(shakeSpring.value)*config.shakeFactor;
+
+  ctx.save();
+  ctx.translate(cx+sx,cy+sy);ctx.scale(zoom,zoom);ctx.rotate(sr);ctx.translate(-cx,-cy);
+
+  renderBg(theme);
+  drawShockwaves();
+
+  switch(config.visMode){
+    case'phonk':drawPhonk(theme);break;
+    case'radial':drawRadial(theme);break;
+    case'wave':drawWave(theme);break;
+    case'mirror':drawMirror(theme);break;
+    case'cyberpunk':default:drawCyberBars(theme);break;
+  }
+
+  drawAllSparks();
+  ctx.restore();
+
+  postFX(theme);
+}
+
+// =====================================================================
+// EVENTS
+// =====================================================================
+window.addEventListener('dragover',e=>{e.preventDefault();dropOverlay.classList.add('active')});
+window.addEventListener('dragleave',e=>{if(e.clientX<=0||e.clientY<=0)dropOverlay.classList.remove('active')});
+window.addEventListener('drop',e=>{e.preventDefault();dropOverlay.classList.remove('active');if(e.dataTransfer.files.length)loadAudioFile(e.dataTransfer.files[0])});
+fileInput.addEventListener('change',e=>{if(e.target.files.length)loadAudioFile(e.target.files[0])});
+btnOpenFile.addEventListener('click',()=>fileInput.click());
+btnPlay.addEventListener('click',togglePlayPause);
+btnMic.addEventListener('click',toggleMic);
+btnDemo.addEventListener('click',toggleDemo);
+volumeSlider.addEventListener('input',e=>{config.volume=parseFloat(e.target.value);if(gainNode)gainNode.gain.value=config.volume});
+window.addEventListener('wheel',e=>{if(e.target.closest('.side-panel')||e.target.closest('select'))return;config.volume=Math.max(0,Math.min(1,config.volume-Math.sign(e.deltaY)*.05));volumeSlider.value=config.volume;if(gainNode)gainNode.gain.value=config.volume});
+$('slider-zoom').addEventListener('input',e=>{config.zoomFactor=parseFloat(e.target.value);$('val-zoom').textContent=config.zoomFactor.toFixed(2)+'x'});
+$('slider-shake').addEventListener('input',e=>{config.shakeFactor=parseFloat(e.target.value);$('val-shake').textContent=config.shakeFactor.toFixed(2)+'x'});
+$('slider-sensitivity').addEventListener('input',e=>{config.sensitivity=parseFloat(e.target.value);$('val-sensitivity').textContent=config.sensitivity.toFixed(1)+'x'});
+$('slider-glow').addEventListener('input',e=>{config.glowFactor=parseFloat(e.target.value);$('val-glow').textContent=config.glowFactor.toFixed(1)+'x'});
+$('slider-particles').addEventListener('input',e=>{config.particleCount=parseInt(e.target.value);$('val-particles').textContent=config.particleCount;initStars()});
+$('slider-vhs').addEventListener('input',e=>{config.vhsAmount=parseFloat(e.target.value);$('val-vhs').textContent=config.vhsAmount.toFixed(2)+'x'});
+$('slider-invert').addEventListener('input',e=>{config.invertOnDrop=parseInt(e.target.value);$('val-invert').textContent=config.invertOnDrop?'ON':'OFF'});
+selectVisMode.addEventListener('change',e=>config.visMode=e.target.value);
+selectBgMode.addEventListener('change',e=>config.bgMode=e.target.value);
+selectTheme.addEventListener('change',e=>config.theme=e.target.value);
+btnToggleSettings.addEventListener('click',()=>sidePanel.classList.toggle('ui-hidden'));
+btnFullscreen.addEventListener('click',()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{})});
+
+let uiTimeout=null,uiVisible=true;const uiLayers=document.querySelectorAll('.ui-layer');
+function showUI(){if(!uiVisible){uiLayers.forEach(el=>el.classList.remove('ui-hidden'));document.body.style.cursor='default';uiVisible=true}clearTimeout(uiTimeout);uiTimeout=setTimeout(()=>{if(isPlaying){uiLayers.forEach(el=>el.classList.add('ui-hidden'));document.body.style.cursor='none';uiVisible=false}},4500)}
+window.addEventListener('mousemove',showUI);
+window.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;showUI();
+  if(e.code==='Space'){e.preventDefault();togglePlayPause()}
+  else if(e.key==='f'||e.key==='F')btnFullscreen.click();
+  else if(e.key==='h'||e.key==='H'){uiVisible=!uiVisible;uiLayers.forEach(el=>el.classList.toggle('ui-hidden',!uiVisible))}
+  else if(e.key==='d'||e.key==='D')toggleDemo();
+  else if(e.key==='m'||e.key==='M'){config.volume=config.volume>0?0:.8;volumeSlider.value=config.volume;if(gainNode)gainNode.gain.value=config.volume;showToast(config.volume===0?'음소거':'소리 켬')}
+});
+progressBar.addEventListener('click',e=>{if(!audioBuffer)return;const r=progressBar.getBoundingClientRect();playBuf((e.clientX-r.left)/r.width*audioBuffer.duration)});
+
+// ---- INIT ----
+initNoiseTexture();
+resize();
+render();
+</script>
+</body>
+</html>

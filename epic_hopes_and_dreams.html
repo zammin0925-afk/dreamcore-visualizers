@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOPES & DREAMS // 희망과 꿈 (Epic Orchestral Sanctuary)</title>
+  <style>
+    :root {
+      --rainbow-red: #ff3366;
+      --rainbow-orange: #ff9933;
+      --rainbow-yellow: #ffff33;
+      --rainbow-green: #33ff99;
+      --rainbow-cyan: #33ffff;
+      --rainbow-blue: #3399ff;
+      --rainbow-purple: #cc33ff;
+      --gold-shine: #ffd700;
+      --bg-dark: #05060f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      font-family: "Orbitron", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+      color: #fff;
+    }
+
+    #stage-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+      transform-origin: center center;
+    }
+
+    canvas#epicCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Ambient Prismatic Glow */
+    #ambient-vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+      box-shadow: inset 0 0 160px rgba(5, 6, 15, 0.8);
+      background: radial-gradient(circle, transparent 40%, rgba(5, 6, 15, 0.6) 100%);
+    }
+
+    /* Top Left Epic HUD */
+    #epic-hud {
+      position: absolute;
+      top: 28px;
+      left: 34px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      pointer-events: none;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .brand-title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 3.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ff3366, #ff9933, #ffff33, #33ff99, #33ffff, #cc33ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.6));
+    }
+
+    .epic-subtitle {
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .track-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(18, 20, 36, 0.65);
+      border: 1px solid rgba(255, 215, 0, 0.35);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-top: 4px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 22px rgba(0, 0, 0, 0.5);
+    }
+
+    .save-star {
+      width: 12px;
+      height: 12px;
+      background: var(--gold-shine);
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      box-shadow: 0 0 12px var(--gold-shine);
+      animation: pulseStar 1.2s infinite alternate;
+    }
+
+    @keyframes pulseStar {
+      0% { transform: scale(0.85) rotate(0deg); opacity: 0.7; }
+      100% { transform: scale(1.3) rotate(45deg); opacity: 1; }
+    }
+
+    #track-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.8px;
+      max-width: 360px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lore-quote {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: 5px;
+      letter-spacing: 0.6px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      transition: opacity 0.8s ease;
+    }
+
+    /* Top Right Floating Navigation Tools */
+    #top-right-bar {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-btn {
+      background: rgba(18, 20, 36, 0.65);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      color: #fff;
+      padding: 8px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-btn:hover {
+      background: rgba(255, 215, 0, 0.25);
+      border-color: var(--gold-shine);
+      box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .hud-btn.active {
+      background: linear-gradient(135deg, rgba(255, 51, 102, 0.4), rgba(51, 255, 255, 0.4));
+      border-color: var(--rainbow-cyan);
+      box-shadow: 0 0 18px rgba(51, 255, 255, 0.5);
+    }
+
+    .hud-btn.determination-btn {
+      background: linear-gradient(135deg, rgba(255, 51, 102, 0.5), rgba(255, 215, 0, 0.5));
+      border-color: var(--gold-shine);
+      color: #fff;
+      font-weight: 900;
+    }
+    .hud-btn.determination-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+    }
+
+    /* Playlist Drawer */
+    #playlist-drawer {
+      position: absolute;
+      top: 0;
+      right: -360px;
+      width: 350px;
+      height: 100%;
+      background: rgba(12, 14, 26, 0.94);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-left: 1px solid rgba(255, 215, 0, 0.25);
+      z-index: 25;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: -15px 0 45px rgba(0, 0, 0, 0.8);
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #playlist-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 12px;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 1.8px;
+      color: var(--gold-shine);
+      text-transform: uppercase;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .close-btn:hover { color: #fff; }
+
+    #track-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #track-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    #track-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.35);
+      border-radius: 2px;
+    }
+
+    .playlist-item {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .playlist-item:hover {
+      background: rgba(255, 215, 0, 0.16);
+      border-color: rgba(255, 215, 0, 0.4);
+      transform: translateX(3px);
+    }
+
+    .playlist-item.active {
+      background: linear-gradient(90deg, rgba(255, 51, 102, 0.28), rgba(51, 255, 255, 0.22));
+      border-color: var(--gold-shine);
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.3);
+    }
+
+    .item-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-meta {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .drop-zone {
+      border: 2px dashed rgba(255, 215, 0, 0.35);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(255, 215, 0, 0.04);
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone:hover {
+      background: rgba(255, 215, 0, 0.12);
+      border-color: var(--gold-shine);
+    }
+
+    .drop-zone-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.5;
+    }
+
+    /* Floating Bottom Dock Control Panel */
+    #ui-dock {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(94%, 960px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-deck {
+      background: rgba(15, 17, 30, 0.72);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      border-radius: 18px;
+      padding: 13px 22px;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .time-lbl {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      font-variant-numeric: tabular-nums;
+      min-width: 40px;
+    }
+
+    input[type="range"]#trackSlider {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]#trackSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--gold-shine);
+      box-shadow: 0 0 12px var(--gold-shine);
+      cursor: pointer;
+    }
+
+    .deck-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: rgba(255, 255, 255, 0.9);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 215, 0, 0.22);
+      border-color: rgba(255, 215, 0, 0.5);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, rgba(255, 51, 102, 0.38), rgba(51, 255, 255, 0.38));
+      border-color: var(--rainbow-cyan);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(51, 255, 255, 0.4);
+    }
+
+    .vol-slider {
+      -webkit-appearance: none;
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.25);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--gold-shine);
+      cursor: pointer;
+    }
+
+    /* Zen Mode State */
+    body.zen-mode #ui-dock {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 35px);
+    }
+
+    body.zen-mode #epic-hud {
+      opacity: 0.25;
+      transform: translateY(-6px);
+    }
+
+    body.zen-mode #epic-hud:hover {
+      opacity: 0.95;
+    }
+
+    #tip-bar {
+      position: absolute;
+      bottom: 8px;
+      right: 18px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(15, 17, 30, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--gold-shine);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(255, 215, 0, 0.45);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    input[type="file"]#fileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Epic Canvas Stage -->
+  <div id="stage-container">
+    <canvas id="epicCanvas"></canvas>
+  </div>
+
+  <div id="ambient-vignette"></div>
+
+  <!-- Top Left Epic HUD & Undertale Lore -->
+  <div id="epic-hud">
+    <div class="brand-title">HOPES & DREAMS</div>
+    <div class="epic-subtitle">EPIC ORCHESTRAL SANCTUARY // 불멸의 의지</div>
+    <div class="track-badge">
+      <div class="save-star"></div>
+      <span id="track-name">HOPES AND DREAMS (TOBY FOX TRIBUTE)</span>
+    </div>
+    <div class="lore-quote" id="loreQuote">"하지만 당신의 영혼은 결코 포기를 거부했다."</div>
+  </div>
+
+  <!-- Top Right Navigation Tools -->
+  <div id="top-right-bar">
+    <a href="dreamcore_sanctuary.html" class="hud-btn" style="text-decoration:none;" title="아련하고 슬픈 기억의 잔상으로 이동">
+      🥀 드림코어
+    </a>
+    <button class="hud-btn determination-btn" id="btnDetermination" title="희망과 의지의 별빛 폭발 (단축키: D)">
+      ❤️ 의지 (SAVE)
+    </button>
+    <button class="hud-btn" id="btnTogglePlaylist" title="트랙 목록 및 내 음악 불러오기 (단축키: P)">
+      📑 트랙 모음 (<span id="track-count">3</span>)
+    </button>
+    <button class="hud-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
+      👁️
+    </button>
+    <button class="hud-btn" id="btnFullscreen" title="전체화면 (단축키: F)">
+      ⛶
+    </button>
+  </div>
+
+  <!-- Playlist & Music Importer Drawer -->
+  <div id="playlist-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">THE ARCHIVE OF HOPE</div>
+      <button class="close-btn" id="btnClosePlaylist">&times;</button>
+    </div>
+
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone">
+      <div style="font-size: 24px; margin-bottom: 4px;">🌟</div>
+      <div class="drop-zone-text">
+        <strong>내 음악 파일 불러오기</strong><br>
+        Hopes and Dreams / 언더테일 / 웅장한 OST 드래그 또는 클릭
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="audio/*,video/mp4" multiple>
+
+    <!-- Playlist Tracks -->
+    <div id="track-list"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">알림</div>
+
+  <!-- Floating Bottom Controls -->
+  <div id="ui-dock">
+    <div class="glass-deck">
+      <!-- Progress Bar -->
+      <div class="progress-row">
+        <span class="time-lbl" id="curTime">00:00</span>
+        <input type="range" id="trackSlider" min="0" max="100" value="0" step="0.1">
+        <span class="time-lbl" id="durTime">00:00</span>
+      </div>
+
+      <div class="deck-row">
+        <!-- Play / Prev / Next -->
+        <div class="controls-group">
+          <button class="pill-btn" id="btnPrev">⏮️ 이전</button>
+          <button class="pill-btn" id="btnPlayPause" style="min-width: 80px; color: var(--gold-shine);">▶ 재생</button>
+          <button class="pill-btn" id="btnNext">다음 ⏭️</button>
+          <button class="pill-btn active" id="btnLoop" title="한 곡 반복">🔁</button>
+        </div>
+
+        <!-- Epic Visual Modes -->
+        <div class="controls-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.6); margin-right: 2px;">비주얼:</span>
+          <button class="pill-btn active" id="modeRainbowStar">🌈 무지개 의지의 별</button>
+          <button class="pill-btn" id="modeLightPillar">✨ 여명의 빛 기둥</button>
+          <button class="pill-btn" id="modeCosmicPrism">🌌 성운 프리즘</button>
+        </div>
+
+        <!-- Audio FX -->
+        <div class="controls-group">
+          <button class="pill-btn active" id="btnOrchestralBoost" title="웅장한 오케스트라 웅장함 강조">🎺 ORCHESTRAL</button>
+          <button class="pill-btn" id="btnSlowedReverb" title="아련한 기억의 슬로우드 모드">🌙 SLOWED</button>
+        </div>
+
+        <!-- Volume -->
+        <div class="controls-group" style="align-items: center; gap: 6px;">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.6);">VOL</span>
+          <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="0.75">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tip-bar">단축키: [Space] 재생/정지 · [D] 의지 폭발 · [H] UI 숨김 · [P] 트랙 목록 · [화면 클릭] 별빛 생성</div>
+
+  <script>
+    /* ==========================================================================
+       1. Global State & Epic Undertale Quotes
+       ========================================================================== */
+    const state = {
+      visualMode: 'rainbowStar', // 'rainbowStar', 'lightPillar', 'cosmicPrism'
+      zenMode: false,
+      isPlaying: false,
+      isLooping: true,
+      currentTrackIdx: 0,
+      orchestralBoost: true,
+      slowedReverb: false,
+      masterVolume: 0.75,
+      // Visual Reactivity & Particle System
+      subBass: 0.2,
+      melodyMid: 0.2,
+      highTreble: 0.2,
+      determinationPulse: 0,
+      rainbowStars: [],
+      cosmicDust: [],
+      prismaticBeams: []
+    };
+
+    const epicQuotesList = [
+      "하지만 당신의 영혼은 결코 포기를 거부했다.",
+      "모든 이들의 희망과 꿈이 당신의 마음에 찬란한 빛으로 깃듭니다.",
+      "당신은 온 힘을 다해 부르짖었다... 그리고 세상이 응답했다.",
+      "세상이 아무리 어두워도, 너의 빛은 결코 꺼지지 않아.",
+      "기억해, 당신에게는 아직 구해야 할 친구들이 있어.",
+      "꿈은 결코 끝나지 않는다. 영원히 계속될 거야.",
+      "당신은 희망으로 가득 찼다."
+    ];
+    let quoteIndex = 0;
+    const loreQuoteEl = document.getElementById('loreQuote');
+    setInterval(() => {
+      quoteIndex = (quoteIndex + 1) % epicQuotesList.length;
+      loreQuoteEl.style.opacity = 0;
+      setTimeout(() => {
+        loreQuoteEl.innerText = `"${epicQuotesList[quoteIndex]}"`;
+        loreQuoteEl.style.opacity = 1;
+      }, 700);
+    }, 15000);
+
+    // DOM Elements
+    const canvas = document.getElementById('epicCanvas');
+    const ctx = canvas.getContext('2d');
+    const trackNameEl = document.getElementById('track-name');
+    const trackCountEl = document.getElementById('track-count');
+    const curTimeEl = document.getElementById('curTime');
+    const durTimeEl = document.getElementById('durTime');
+    const trackSlider = document.getElementById('trackSlider');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnLoop = document.getElementById('btnLoop');
+    const btnDetermination = document.getElementById('btnDetermination');
+    const btnOrchestralBoost = document.getElementById('btnOrchestralBoost');
+    const btnSlowedReverb = document.getElementById('btnSlowedReverb');
+    const volSlider = document.getElementById('volSlider');
+    const btnTogglePlaylist = document.getElementById('btnTogglePlaylist');
+    const btnClosePlaylist = document.getElementById('btnClosePlaylist');
+    const playlistDrawer = document.getElementById('playlist-drawer');
+    const trackListEl = document.getElementById('track-list');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const toast = document.getElementById('toast');
+    const btnZenMode = document.getElementById('btnZenMode');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+
+    const modeButtons = {
+      rainbowStar: document.getElementById('modeRainbowStar'),
+      lightPillar: document.getElementById('modeLightPillar'),
+      cosmicPrism: document.getElementById('modeCosmicPrism')
+    };
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ==========================================================================
+       2. Web Audio API Engine & High-Octane "Hopes & Dreams" Synthesizer
+       ========================================================================== */
+    class EpicAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.analyser = null;
+        this.audioEl = new Audio();
+        this.audioEl.crossOrigin = 'anonymous';
+
+        this.convolver = null;
+        this.dryGain = null;
+        this.wetGain = null;
+        this.eqLow = null;
+        this.eqHigh = null;
+        this.masterGain = null;
+        this.freqData = null;
+
+        this.isSynthPlaying = false;
+        this.synthTimer = null;
+        this.synthStep = 0;
+        this.isInitialized = false;
+
+        // Iconic Uplifting Triumphant Chord Progression in D Major / B Minor
+        // Gmaj7 (G3, B3, D4, F#4), A (A3, C#4, E4), F#m (F#3, A3, C#4), Bm (B2, D3, F#3, B3)
+        this.chords = [
+          [196.00, 246.94, 293.66, 369.99], // Gmaj7
+          [220.00, 277.18, 329.63, 440.00], // A
+          [185.00, 220.00, 277.18, 369.99], // F#m
+          [123.47, 146.83, 185.00, 246.94]  // Bm
+        ];
+
+        // "Hopes and Dreams" Inspired Ascending Melody Lead Notes (Hz)
+        this.melodyNotes = [
+          293.66, 329.63, 369.99, 440.00, 493.88, 554.37, 587.33, 659.25, 739.99, 880.00
+        ];
+
+        this.audioEl.addEventListener('ended', () => {
+          if (state.isLooping) {
+            this.audioEl.currentTime = 0;
+            this.audioEl.play();
+          } else {
+            playNextTrack();
+          }
+        });
+
+        this.audioEl.addEventListener('timeupdate', () => {
+          if (!this.isSynthPlaying && this.audioEl.duration) {
+            trackSlider.value = (this.audioEl.currentTime / this.audioEl.duration) * 100;
+            curTimeEl.innerText = formatTime(this.audioEl.currentTime);
+            durTimeEl.innerText = formatTime(this.audioEl.duration);
+          }
+        });
+      }
+
+      init() {
+        if (this.isInitialized) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 512;
+        this.analyser.smoothingTimeConstant = 0.85;
+        this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+
+        // Orchestral EQ Boosters
+        this.eqLow = this.ctx.createBiquadFilter();
+        this.eqLow.type = 'lowshelf';
+        this.eqLow.frequency.setValueAtTime(100, this.ctx.currentTime);
+        this.eqLow.gain.setValueAtTime(state.orchestralBoost ? 6.0 : 0, this.ctx.currentTime);
+
+        this.eqHigh = this.ctx.createBiquadFilter();
+        this.eqHigh.type = 'highshelf';
+        this.eqHigh.frequency.setValueAtTime(4500, this.ctx.currentTime);
+        this.eqHigh.gain.setValueAtTime(state.orchestralBoost ? 4.5 : 0, this.ctx.currentTime);
+
+        this.convolver = this.createCathedralReverb(3.5, 1.8);
+        this.dryGain = this.ctx.createGain();
+        this.wetGain = this.ctx.createGain();
+        this.wetGain.gain.setValueAtTime(state.slowedReverb ? 0.6 : 0.25, this.ctx.currentTime);
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(state.masterVolume, this.ctx.currentTime);
+
+        // Connect Local Audio Element Source
+        const source = this.ctx.createMediaElementSource(this.audioEl);
+        source.connect(this.eqLow);
+        this.eqLow.connect(this.eqHigh);
+
+        this.eqHigh.connect(this.dryGain);
+        this.eqHigh.connect(this.convolver);
+        this.convolver.connect(this.wetGain);
+
+        this.dryGain.connect(this.masterGain);
+        this.wetGain.connect(this.masterGain);
+
+        this.masterGain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        this.isInitialized = true;
+      }
+
+      createCathedralReverb(duration, decay) {
+        const rate = this.ctx.sampleRate;
+        const length = rate * duration;
+        const impulse = this.ctx.createBuffer(2, length, rate);
+        const left = impulse.getChannelData(0);
+        const right = impulse.getChannelData(1);
+
+        for (let i = 0; i < length; i++) {
+          const n = i / length;
+          const env = Math.pow(1 - n, decay);
+          left[i] = (Math.random() * 2 - 1) * env;
+          right[i] = (Math.random() * 2 - 1) * env;
+        }
+
+        const conv = this.ctx.createConvolver();
+        conv.buffer = impulse;
+        return conv;
+      }
+
+      updateFX() {
+        if (!this.isInitialized) return;
+        const now = this.ctx.currentTime;
+        this.eqLow.gain.setTargetAtTime(state.orchestralBoost ? 6.0 : 0, now, 0.05);
+        this.eqHigh.gain.setTargetAtTime(state.orchestralBoost ? 4.5 : 0, now, 0.05);
+        this.wetGain.gain.setTargetAtTime(state.slowedReverb ? 0.6 : 0.25, now, 0.1);
+        this.audioEl.playbackRate = state.slowedReverb ? 0.85 : 1.0;
+      }
+
+      setVolume(val) {
+        if (!this.isInitialized) return;
+        this.masterGain.gain.setTargetAtTime(val, this.ctx.currentTime, 0.04);
+      }
+
+      // Procedural "Hopes and Dreams" Fast-Paced Tribute Synthesizer
+      startEpicSynth() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.isSynthPlaying = true;
+        this.synthStep = 0;
+
+        const bpm = state.slowedReverb ? 128 : 170; // Fast energetic 170 BPM
+        const stepInterval = (60 / bpm) / 4 * 1000; // 16th notes
+
+        const melodySequence = [
+          // Bar 1: D4 - F#4 - A4 - B4
+          440.00, 0, 493.88, 0, 587.33, 0, 659.25, 0, 739.99, 0, 880.00, 739.99, 659.25, 0, 587.33, 0,
+          // Bar 2: Soaring high climax
+          659.25, 0, 739.99, 0, 880.00, 0, 987.77, 0, 880.00, 0, 739.99, 0, 659.25, 587.33, 493.88, 0
+        ];
+
+        const synthTick = () => {
+          if (!state.isPlaying || !this.isSynthPlaying) return;
+          const now = this.ctx.currentTime;
+          const step16 = this.synthStep % 16;
+          const chordIdx = Math.floor(this.synthStep / 16) % this.chords.length;
+          const chord = this.chords[chordIdx];
+
+          // 1. Energetic Driving Four-on-the-Floor Kick on beats 0, 4, 8, 12
+          if (step16 % 4 === 0) {
+            this.playEpicKick(now);
+          }
+
+          // 2. Triumphant Snare on beats 4, 12
+          if (step16 === 4 || step16 === 12) {
+            this.playEpicSnare(now);
+          }
+
+          // 3. Fast High-Hat rolls
+          if (step16 % 2 === 0) {
+            this.playEpicHat(now);
+          }
+
+          // 4. Octave Driving Bass Line on 8th notes
+          if (step16 % 2 === 0) {
+            const bassFreq = (step16 % 4 === 0) ? chord[0] * 0.5 : chord[0];
+            this.playDrivingBass(now, bassFreq);
+          }
+
+          // 5. Soaring Brass / Lead Melody
+          const leadFreq = melodySequence[this.synthStep % melodySequence.length];
+          if (leadFreq > 0) {
+            this.playLeadSynth(now, leadFreq);
+          }
+
+          // 6. Lush Orchestral Pad Swell on Bar Changes
+          if (step16 === 0) {
+            this.playChordPad(now, chord);
+          }
+
+          this.synthStep++;
+          this.synthTimer = setTimeout(synthTick, stepInterval);
+        };
+
+        synthTick();
+      }
+
+      playEpicKick(time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.frequency.setValueAtTime(160, time);
+        osc.frequency.exponentialRampToValueAtTime(45, time + 0.12);
+
+        gain.gain.setValueAtTime(1.0, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.28);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(time);
+        osc.stop(time + 0.3);
+      }
+
+      playEpicSnare(time) {
+        const bufferSize = this.ctx.sampleRate * 0.16;
+        const noiseBuf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.45;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(1000, time);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.7, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start(time);
+      }
+
+      playEpicHat(time) {
+        const bufferSize = this.ctx.sampleRate * 0.035;
+        const buf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.12;
+
+        const hat = this.ctx.createBufferSource();
+        hat.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(8000, time);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.2, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
+
+        hat.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        hat.start(time);
+      }
+
+      playDrivingBass(time, freq) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, time);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, time);
+
+        gain.gain.setValueAtTime(0.65, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+
+        osc.start(time);
+        osc.stop(time + 0.25);
+      }
+
+      playLeadSynth(time, freq) {
+        // Soaring dual oscillator (Sawtooth + Square)
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc1.type = 'sawtooth';
+        osc2.type = 'square';
+        osc1.frequency.setValueAtTime(freq, time);
+        osc2.frequency.setValueAtTime(freq * 1.004, time); // Subtle shimmer detune
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(2400, time);
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.38, time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.42);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.convolver);
+        gain.connect(this.masterGain);
+
+        osc1.start(time);
+        osc2.start(time);
+        osc1.stop(time + 0.45);
+        osc2.stop(time + 0.45);
+      }
+
+      playChordPad(time, chord) {
+        chord.forEach(freq => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const filter = this.ctx.createBiquadFilter();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, time);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(1100, time);
+
+          gain.gain.setValueAtTime(0, time);
+          gain.gain.linearRampToValueAtTime(0.12, time + 0.6);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 2.4);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.convolver);
+          gain.connect(this.masterGain);
+
+          osc.start(time);
+          osc.stop(time + 2.5);
+        });
+      }
+
+      stopSynth() {
+        this.isSynthPlaying = false;
+        clearTimeout(this.synthTimer);
+      }
+    }
+
+    const epicDeck = new EpicAudioEngine();
+
+    /* ==========================================================================
+       3. Playlist & Local Music Importer
+       ========================================================================== */
+    const playlist = [
+      {
+        id: 'e1',
+        title: 'HOPES AND DREAMS (TOBY FOX TRIBUTE)',
+        artist: 'EPIC NOSTALGIA',
+        type: 'procedural',
+        bpm: 170
+      },
+      {
+        id: 'e2',
+        title: 'SAVE THE WORLD (ORCHESTRAL CLIMAX)',
+        artist: 'EPIC NOSTALGIA',
+        type: 'procedural',
+        bpm: 175
+      },
+      {
+        id: 'e3',
+        title: 'HIS THEME (MEMORIES OF HOPE)',
+        artist: 'EPIC NOSTALGIA',
+        type: 'procedural',
+        bpm: 120
+      }
+    ];
+
+    function renderPlaylistUI() {
+      trackListEl.innerHTML = '';
+      trackCountEl.innerText = playlist.length;
+
+      playlist.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = `playlist-item ${idx === state.currentTrackIdx ? 'active' : ''}`;
+        el.innerHTML = `
+          <div class="item-info">
+            <span class="item-title">${idx + 1}. ${item.title}</span>
+            <span class="item-meta">${item.artist} · ${item.bpm ? item.bpm + ' BPM' : 'Local Track'}</span>
+          </div>
+          <span style="font-size: 11px; color: ${idx === state.currentTrackIdx ? 'var(--gold-shine)' : 'rgba(255,255,255,0.4)'};">
+            ${idx === state.currentTrackIdx ? '🌟 PLAYING' : 'READY'}
+          </span>
+        `;
+        el.addEventListener('click', () => selectTrack(idx));
+        trackListEl.appendChild(el);
+      });
+    }
+
+    function selectTrack(idx) {
+      state.currentTrackIdx = idx;
+      const track = playlist[idx];
+      trackNameEl.innerText = track.title;
+      renderPlaylistUI();
+
+      if (track.type === 'procedural') {
+        epicDeck.audioEl.pause();
+        epicDeck.audioEl.currentTime = 0;
+        epicDeck.stopSynth();
+        if (state.isPlaying) {
+          epicDeck.startEpicSynth();
+        }
+        curTimeEl.innerText = '00:00';
+        durTimeEl.innerText = '∞';
+        trackSlider.value = 0;
+      } else if (track.type === 'local') {
+        epicDeck.stopSynth();
+        epicDeck.init();
+        epicDeck.audioEl.src = track.url;
+        if (state.isPlaying) {
+          epicDeck.audioEl.play().catch(() => {});
+        }
+      }
+      showToast(`🌟 트랙 선택: ${track.title}`);
+    }
+
+    function playTrack() {
+      epicDeck.init();
+      state.isPlaying = true;
+      btnPlayPause.innerText = '⏸️ 일시정지';
+      btnPlayPause.style.color = 'var(--rainbow-cyan)';
+
+      const track = playlist[state.currentTrackIdx];
+      if (track.type === 'procedural') {
+        epicDeck.startEpicSynth();
+      } else {
+        epicDeck.audioEl.play().catch(() => {});
+      }
+    }
+
+    function pauseTrack() {
+      state.isPlaying = false;
+      btnPlayPause.innerText = '▶ 재생';
+      btnPlayPause.style.color = 'var(--gold-shine)';
+
+      epicDeck.stopSynth();
+      epicDeck.audioEl.pause();
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) {
+        pauseTrack();
+        showToast('일시 정지');
+      } else {
+        playTrack();
+        showToast('🌟 희망과 꿈의 선율 시작!');
+      }
+    }
+
+    function playNextTrack() {
+      const nextIdx = (state.currentTrackIdx + 1) % playlist.length;
+      selectTrack(nextIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function playPrevTrack() {
+      const prevIdx = (state.currentTrackIdx - 1 + playlist.length) % playlist.length;
+      selectTrack(prevIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function formatTime(secs) {
+      if (!secs || isNaN(secs)) return '00:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      let added = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+          playlist.push({
+            id: 'local_' + Date.now() + '_' + i,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            artist: 'LOCAL EPIC TRACK',
+            type: 'local',
+            url: URL.createObjectURL(file)
+          });
+          added++;
+        }
+      }
+      if (added > 0) {
+        renderPlaylistUI();
+        showToast(`📂 ${added}곡이 희망의 보관소에 추가되었습니다!`);
+        selectTrack(playlist.length - added);
+        playTrack();
+      }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      handleFiles(e.dataTransfer.files);
+    });
+
+    /* ==========================================================================
+       4. Responsive Canvas & Prismatic Particle Engine
+       ========================================================================== */
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      initCosmicDust();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initCosmicDust() {
+      state.cosmicDust = [];
+      const count = Math.min(Math.floor((width * height) / 4000), 280);
+      for (let i = 0; i < count; i++) {
+        state.cosmicDust.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() * 2.2 + 0.6,
+          speedY: -Math.random() * 0.8 - 0.2,
+          speedX: (Math.random() - 0.5) * 0.4,
+          hue: Math.random() * 360,
+          alpha: Math.random() * 0.7 + 0.3
+        });
+      }
+    }
+
+    // Spawn Burst of Rainbow Stars on Determination or Click
+    function triggerDeterminationBurst(burstX, burstY) {
+      state.determinationPulse = 1.0;
+      const count = 55;
+      const rainbowColors = ['#ff3366', '#ff9933', '#ffff33', '#33ff99', '#33ffff', '#3399ff', '#cc33ff', '#ffd700'];
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 12 + 4;
+        state.rainbowStars.push({
+          x: burstX || width * 0.5,
+          y: burstY || height * 0.45,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 14 + 8,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.2,
+          color: rainbowColors[Math.floor(Math.random() * rainbowColors.length)],
+          life: 1.0,
+          decay: Math.random() * 0.02 + 0.012
+        });
+      }
+      showToast('❤️ 당신의 영혼은 의지(DETERMINATION)로 가득 찼다!');
+    }
+
+    btnDetermination.addEventListener('click', () => triggerDeterminationBurst());
+
+    canvas.addEventListener('click', (e) => {
+      triggerDeterminationBurst(e.clientX, e.clientY);
+    });
+
+    /* ==========================================================================
+       5. Real-time Audio Frequency Extraction
+       ========================================================================== */
+    function extractAudioEnergy() {
+      if (!epicDeck.analyser) {
+        state.subBass = 0.25;
+        state.melodyMid = 0.25;
+        state.highTreble = 0.25;
+        return;
+      }
+
+      epicDeck.analyser.getByteFrequencyData(epicDeck.freqData);
+      const data = epicDeck.freqData;
+
+      let subSum = 0;
+      for (let i = 0; i < 5; i++) subSum += data[i];
+      const targetSub = (subSum / 5) / 255;
+
+      let midSum = 0;
+      for (let i = 20; i < 80; i++) midSum += data[i];
+      const targetMid = (midSum / 60) / 255;
+
+      let highSum = 0;
+      for (let i = 120; i < 220; i++) highSum += data[i];
+      const targetHigh = (highSum / 100) / 255;
+
+      state.subBass += (targetSub - state.subBass) * 0.35;
+      state.melodyMid += (targetMid - state.melodyMid) * 0.35;
+      state.highTreble += (targetHigh - state.highTreble) * 0.35;
+
+      if (state.determinationPulse > 0) {
+        state.determinationPulse = Math.max(0, state.determinationPulse - 0.025);
+      }
+    }
+
+    /* ==========================================================================
+       6. VISUAL MODE 1: RAINBOW STAR OF DETERMINATION (무지개 의지의 별)
+       ========================================================================== */
+    function drawRainbowStarMode(timeNow) {
+      // Cosmic Indigo Sky
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#0c071e');
+      skyGrad.addColorStop(0.5, '#1e0d36');
+      skyGrad.addColorStop(1, '#05030d');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      const cx = width * 0.5;
+      const cy = height * 0.44;
+
+      // 1. Radiant Prismatic Rotating God Rays (빛의 후광)
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const beamCount = 18;
+      const beamLen = Math.max(width, height) * 0.85;
+
+      for (let i = 0; i < beamCount; i++) {
+        const angle = (i / beamCount) * Math.PI * 2 + timeNow * 0.0004;
+        const beamSpread = 0.12 + state.subBass * 0.08;
+        const hue = (i * (360 / beamCount) + timeNow * 0.05) % 360;
+
+        ctx.fillStyle = `hsla(${hue}, 100%, 75%, ${0.28 + state.melodyMid * 0.35})`;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle - beamSpread) * beamLen, cy + Math.sin(angle - beamSpread) * beamLen);
+        ctx.lineTo(cx + Math.cos(angle + beamSpread) * beamLen, cy + Math.sin(angle + beamSpread) * beamLen);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 2. Giant Glowing Prismatic Pulsing Corona
+      const starRadius = (55 + state.subBass * 40 + state.determinationPulse * 50);
+      const coronaGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, starRadius * 3.5);
+      coronaGrad.addColorStop(0, '#ffffff');
+      coronaGrad.addColorStop(0.2, '#ffff66');
+      coronaGrad.addColorStop(0.55, 'rgba(255, 51, 153, 0.45)');
+      coronaGrad.addColorStop(0.85, 'rgba(51, 255, 255, 0.25)');
+      coronaGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = coronaGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, starRadius * 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Central Seven-Point Determination Star (의지의 별)
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(timeNow * 0.001);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(255, 215, 0, 0.95)';
+      ctx.shadowBlur = 35;
+
+      drawPolyStar(0, 0, 8, starRadius, starRadius * 0.48);
+      ctx.fill();
+      ctx.restore();
+
+      // 4. Equalizer Rainbow Ring around Star
+      const ringSpokes = 64;
+      for (let s = 0; s < ringSpokes; s++) {
+        const bin = Math.floor(s * (128 / ringSpokes));
+        const val = epicDeck.freqData ? epicDeck.freqData[bin] / 255 : Math.random() * 0.4;
+        const spokeLen = val * 85 * (1 + state.determinationPulse);
+
+        const sAngle = (s / ringSpokes) * Math.PI * 2 - timeNow * 0.0006;
+        const sHue = (s * (360 / ringSpokes) + timeNow * 0.06) % 360;
+
+        ctx.strokeStyle = `hsl(${sHue}, 100%, 75%)`;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(
+          cx + Math.cos(sAngle) * (starRadius * 1.35),
+          cy + Math.sin(sAngle) * (starRadius * 1.35)
+        );
+        ctx.lineTo(
+          cx + Math.cos(sAngle) * (starRadius * 1.35 + spokeLen),
+          cy + Math.sin(sAngle) * (starRadius * 1.35 + spokeLen)
+        );
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawPolyStar(cx, cy, spikes, outerRadius, innerRadius) {
+      let rot = Math.PI / 2 * 3;
+      let x = cx;
+      let y = cy;
+      const step = Math.PI / spikes;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+    }
+
+    /* ==========================================================================
+       7. VISUAL MODE 2: PILLAR OF ASCENDING DAWN LIGHT (빛의 기둥)
+       ========================================================================== */
+    function drawLightPillarMode(timeNow) {
+      // Cosmic Dawn Horizon
+      const horizonY = height * 0.68;
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+      skyGrad.addColorStop(0, '#0a081a');
+      skyGrad.addColorStop(0.5, '#2e1245');
+      skyGrad.addColorStop(0.85, '#852d6a');
+      skyGrad.addColorStop(1, '#ff9966');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, horizonY);
+
+      // Crystalline Sea Floor
+      const waterGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+      waterGrad.addColorStop(0, '#591f4b');
+      waterGrad.addColorStop(0.5, '#230e28');
+      waterGrad.addColorStop(1, '#08030d');
+      ctx.fillStyle = waterGrad;
+      ctx.fillRect(0, horizonY, width, height - horizonY);
+
+      const px = width * 0.5;
+
+      // Ascending Infinite Pillar of Light
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+
+      const pillarW = 85 + state.subBass * 75 + state.determinationPulse * 120;
+      const pGrad = ctx.createLinearGradient(px - pillarW / 2, 0, px + pillarW / 2, 0);
+      pGrad.addColorStop(0, 'rgba(51, 255, 255, 0)');
+      pGrad.addColorStop(0.25, 'rgba(255, 255, 255, 0.7)');
+      pGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.95)');
+      pGrad.addColorStop(0.75, 'rgba(255, 255, 255, 0.7)');
+      pGrad.addColorStop(1, 'rgba(255, 51, 153, 0)');
+
+      ctx.fillStyle = pGrad;
+      ctx.fillRect(px - pillarW / 2, 0, pillarW, horizonY);
+
+      // Light Reflection on Crystalline Sea
+      const reflGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+      reflGrad.addColorStop(0, 'rgba(255, 255, 255, 0.75)');
+      reflGrad.addColorStop(0.5, 'rgba(255, 153, 102, 0.3)');
+      reflGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = reflGrad;
+      ctx.fillRect(px - pillarW * 1.5, horizonY, pillarW * 3, height - horizonY);
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       8. VISUAL MODE 3: COSMIC NEBULA PRISM (성운 프리즘)
+       ========================================================================== */
+    function drawCosmicPrismMode(timeNow) {
+      ctx.fillStyle = '#05060f';
+      ctx.fillRect(0, 0, width, height);
+
+      const cx = width * 0.5;
+      const cy = height * 0.48;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+
+      // 3 Intertwined Glowing Cosmic Orbits
+      const rings = 3;
+      for (let r = 0; r < rings; r++) {
+        const ringRadius = (110 + r * 45) * (1 + state.subBass * 0.35);
+        const ringAngle = timeNow * 0.0008 * (r % 2 === 0 ? 1 : -1) + (r * Math.PI) / 3;
+
+        ctx.strokeStyle = (r === 0) ? '#ff3366' : (r === 1 ? '#33ffff' : '#ffd700');
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, ringRadius * 1.4, ringRadius * 0.65, ringAngle, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Pulsing Prismatic Heart Core
+      const coreR = 42 + state.melodyMid * 30 + state.determinationPulse * 45;
+      const coreGrad = ctx.createRadialGradient(cx, cy, 5, cx, cy, coreR);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, '#ffff33');
+      coreGrad.addColorStop(1, '#ff3366');
+
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       9. Floating Rainbow Stars & Cosmic Stardust Engine
+       ========================================================================== */
+    function updateEpicParticles() {
+      // 1. Ambient Cosmic Dust Soaring Upward
+      state.cosmicDust.forEach(p => {
+        p.y += p.speedY * (1 + state.melodyMid * 1.8);
+        p.x += p.speedX;
+
+        if (p.y < -10) {
+          p.y = height + 10;
+          p.x = Math.random() * width;
+        }
+
+        ctx.fillStyle = `hsla(${p.hue}, 90%, 80%, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 2. Active Determination Rainbow Stars
+      for (let i = state.rainbowStars.length - 1; i >= 0; i--) {
+        const s = state.rainbowStars[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vx *= 0.96;
+        s.vy *= 0.96;
+        s.rotation += s.rotSpeed;
+        s.life -= s.decay;
+
+        if (s.life <= 0) {
+          state.rainbowStars.splice(i, 1);
+        } else {
+          ctx.save();
+          ctx.translate(s.x, s.y);
+          ctx.rotate(s.rotation);
+          ctx.fillStyle = s.color;
+          ctx.shadowColor = s.color;
+          ctx.shadowBlur = 14;
+
+          drawPolyStar(0, 0, 5, s.size * s.life, (s.size * 0.45) * s.life);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    /* ==========================================================================
+       10. Master Animation Loop (60-144 FPS)
+       ========================================================================== */
+    function render(timeNow) {
+      extractAudioEnergy();
+
+      if (state.visualMode === 'rainbowStar') {
+        drawRainbowStarMode(timeNow);
+      } else if (state.visualMode === 'lightPillar') {
+        drawLightPillarMode(timeNow);
+      } else if (state.visualMode === 'cosmicPrism') {
+        drawCosmicPrismMode(timeNow);
+      }
+
+      updateEpicParticles();
+
+      requestAnimationFrame(render);
+    }
+
+    /* ==========================================================================
+       11. Event Handlers
+       ========================================================================== */
+    btnPlayPause.addEventListener('click', togglePlay);
+    btnNext.addEventListener('click', playNextTrack);
+    btnPrev.addEventListener('click', playPrevTrack);
+
+    btnLoop.addEventListener('click', () => {
+      state.isLooping = !state.isLooping;
+      btnLoop.classList.toggle('active', state.isLooping);
+      showToast(state.isLooping ? '🔁 한 곡 반복 켜짐' : '🔁 한 곡 반복 꺼짐');
+    });
+
+    Object.keys(modeButtons).forEach(m => {
+      modeButtons[m].addEventListener('click', () => {
+        state.visualMode = m;
+        Object.keys(modeButtons).forEach(other => modeButtons[other].classList.remove('active'));
+        modeButtons[m].classList.add('active');
+        showToast(`비주얼 모드: ${modeButtons[m].innerText}`);
+      });
+    });
+
+    btnOrchestralBoost.addEventListener('click', () => {
+      state.orchestralBoost = !state.orchestralBoost;
+      btnOrchestralBoost.classList.toggle('active', state.orchestralBoost);
+      epicDeck.updateFX();
+      showToast(state.orchestralBoost ? '🎺 ORCHESTRAL BOOST 켜짐' : 'ORCHESTRAL BOOST 꺼짐');
+    });
+
+    btnSlowedReverb.addEventListener('click', () => {
+      state.slowedReverb = !state.slowedReverb;
+      btnSlowedReverb.classList.toggle('active', state.slowedReverb);
+      epicDeck.updateFX();
+      showToast(state.slowedReverb ? '🌙 SLOWED + REVERB 활성화' : '정상 속도 복귀');
+    });
+
+    volSlider.addEventListener('input', (e) => {
+      state.masterVolume = parseFloat(e.target.value);
+      epicDeck.setVolume(state.masterVolume);
+    });
+
+    trackSlider.addEventListener('input', (e) => {
+      if (epicDeck.audioEl.duration && !epicDeck.isSynthPlaying) {
+        epicDeck.audioEl.currentTime = (parseFloat(e.target.value) / 100) * epicDeck.audioEl.duration;
+      }
+    });
+
+    btnTogglePlaylist.addEventListener('click', () => playlistDrawer.classList.toggle('open'));
+    btnClosePlaylist.addEventListener('click', () => playlistDrawer.classList.remove('open'));
+
+    function toggleZenMode() {
+      state.zenMode = !state.zenMode;
+      document.body.classList.toggle('zen-mode', state.zenMode);
+      showToast(state.zenMode ? '👁️ 감상 모드 (단축키 [H]로 다시 표시)' : '기본 모드로 복귀');
+    }
+    btnZenMode.addEventListener('click', toggleZenMode);
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'd' || e.key === 'D') {
+        triggerDeterminationBurst();
+      } else if (e.key === 'p' || e.key === 'P') {
+        playlistDrawer.classList.toggle('open');
+      } else if (e.key === 'h' || e.key === 'H') {
+        toggleZenMode();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    // Auto-init
+    resizeCanvas();
+    renderPlaylistUI();
+    requestAnimationFrame(render);
+    showToast('🌟 HOPES & DREAMS 준비 완료! [Space]를 눌러 희망의 선율을 들어보세요.');
+  </script>
+</body>
+</html>

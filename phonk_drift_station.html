@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PHONK DRIFT STATION // JDM 808 AUDIO DECK</title>
+  <style>
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-magenta: #ff0055;
+      --neon-yellow: #ffe600;
+      --neon-purple: #9d00ff;
+      --bg-dark: #05060a;
+      --panel-bg: rgba(10, 12, 20, 0.78);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      font-family: "Orbitron", -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+      color: #fff;
+    }
+
+    #stage-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+      transform-origin: center center;
+    }
+
+    canvas#phonkCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 90s CRT & VHS Scanline Overlay */
+    #vhs-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.45) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      opacity: 0.65;
+      transition: opacity 0.3s ease;
+    }
+
+    #vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+      box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Top Left Header & Track Info */
+    #header-hud {
+      position: absolute;
+      top: 24px;
+      left: 30px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .brand-title {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #ff0055, #ff7b00, #00f3ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 15px rgba(255, 0, 85, 0.6));
+    }
+
+    .kanji-subtitle {
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+
+    .track-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(18, 22, 36, 0.65);
+      border: 1px solid rgba(0, 243, 255, 0.35);
+      padding: 6px 14px;
+      border-radius: 8px;
+      margin-top: 4px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .track-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00f3ff;
+      box-shadow: 0 0 10px #00f3ff;
+      animation: pulseDot 1s infinite alternate;
+    }
+
+    @keyframes pulseDot {
+      0% { opacity: 0.4; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+
+    #track-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.8px;
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Top Right JDM Status & Tools */
+    #top-right-bar {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-btn {
+      background: var(--panel-bg);
+      border: 1px solid rgba(255, 0, 85, 0.3);
+      color: #fff;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-btn:hover {
+      background: rgba(255, 0, 85, 0.25);
+      border-color: var(--neon-magenta);
+      box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .hud-btn.active {
+      background: linear-gradient(135deg, rgba(255, 0, 85, 0.4), rgba(0, 243, 255, 0.4));
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 18px rgba(0, 243, 255, 0.5);
+    }
+
+    /* Playlist Drawer (Sidebar) */
+    #playlist-drawer {
+      position: absolute;
+      top: 0;
+      right: -340px;
+      width: 330px;
+      height: 100%;
+      background: rgba(8, 10, 16, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-left: 1px solid rgba(0, 243, 255, 0.25);
+      z-index: 25;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: -15px 0 40px rgba(0, 0, 0, 0.8);
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #playlist-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 12px;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .close-btn:hover { color: #fff; }
+
+    #track-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #track-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    #track-list::-webkit-scrollbar-thumb {
+      background: rgba(0, 243, 255, 0.3);
+      border-radius: 2px;
+    }
+
+    .playlist-item {
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .playlist-item:hover {
+      background: rgba(255, 0, 85, 0.15);
+      border-color: rgba(255, 0, 85, 0.4);
+      transform: translateX(3px);
+    }
+
+    .playlist-item.active {
+      background: linear-gradient(90deg, rgba(255, 0, 85, 0.25), rgba(0, 243, 255, 0.15));
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.25);
+    }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .item-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-meta {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .drop-zone {
+      border: 2px dashed rgba(0, 243, 255, 0.35);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(0, 243, 255, 0.03);
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone:hover {
+      background: rgba(0, 243, 255, 0.08);
+      border-color: var(--neon-cyan);
+    }
+
+    .drop-zone-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.5;
+    }
+
+    /* Floating Bottom Dock Control Panel */
+    #ui-dock {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      width: min(95%, 980px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-deck {
+      background: var(--panel-bg);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 16px;
+      padding: 12px 20px;
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .deck-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Audio Scrubber */
+    .progress-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .time-lbl {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      font-variant-numeric: tabular-nums;
+      min-width: 42px;
+    }
+
+    input[type="range"]#trackSlider {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]#trackSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--neon-magenta);
+      box-shadow: 0 0 10px var(--neon-magenta);
+      cursor: pointer;
+    }
+
+    /* Controls Buttons & FX */
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .dock-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dock-btn:hover {
+      background: rgba(255, 0, 85, 0.2);
+      border-color: var(--neon-magenta);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .dock-btn.active {
+      background: linear-gradient(135deg, rgba(255, 0, 85, 0.35), rgba(0, 243, 255, 0.35));
+      border-color: var(--neon-cyan);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(0, 243, 255, 0.35);
+    }
+
+    .dock-btn.fx-btn {
+      border-color: rgba(255, 230, 0, 0.35);
+      color: #fff8c4;
+    }
+    .dock-btn.fx-btn.active {
+      background: rgba(255, 230, 0, 0.25);
+      border-color: var(--neon-yellow);
+      box-shadow: 0 0 14px rgba(255, 230, 0, 0.4);
+    }
+
+    .dock-btn.tape-stop {
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+    }
+    .dock-btn.tape-stop:active {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .vol-slider {
+      -webkit-appearance: none;
+      width: 60px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+      cursor: pointer;
+    }
+
+    /* Zen Mode State */
+    body.zen-mode #ui-dock {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 35px);
+    }
+
+    body.zen-mode #header-hud {
+      opacity: 0.25;
+      transform: translateY(-6px);
+    }
+
+    body.zen-mode #header-hud:hover {
+      opacity: 0.95;
+    }
+
+    #tip-bar {
+      position: absolute;
+      bottom: 8px;
+      right: 18px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: rgba(10, 12, 20, 0.92);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--neon-magenta);
+      color: #fff;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 50;
+      box-shadow: 0 10px 30px rgba(255, 0, 85, 0.4);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    input[type="file"]#fileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Spring Zoom & Shake Stage Container -->
+  <div id="stage-container">
+    <canvas id="phonkCanvas"></canvas>
+  </div>
+
+  <div id="vhs-overlay"></div>
+  <div id="vignette"></div>
+
+  <!-- Top Left Header & Now Playing -->
+  <div id="header-hud">
+    <div class="brand-title">PHONK // PROTOCOL</div>
+    <div class="kanji-subtitle">深夜高速 // 808 狂気 // DRIFT ENGINE</div>
+    <div class="track-badge">
+      <div class="dot"></div>
+      <span id="track-name">TOKYO DRIFT PROTOCOL (KORDHELL STYLE)</span>
+    </div>
+  </div>
+
+  <!-- Top Right Navigation & Modes -->
+  <div id="top-right-bar">
+    <button class="hud-btn" id="btnTapeStop" title="테이프 스톱 브레이크 효과 (단축키: T)">
+      🛑 TAPE STOP
+    </button>
+    <button class="hud-btn" id="btnTogglePlaylist" title="트랙 목록 / 음악 불러오기 (단축키: P)">
+      📑 트랙 모음 (<span id="track-count">4</span>)
+    </button>
+    <button class="hud-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
+      👁️
+    </button>
+    <button class="hud-btn" id="btnFullscreen" title="전체화면 (단축키: F)">
+      ⛶
+    </button>
+  </div>
+
+  <!-- Playlist & Music Importer Drawer -->
+  <div id="playlist-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">PHONK VAULT</div>
+      <button class="close-btn" id="btnClosePlaylist">&times;</button>
+    </div>
+
+    <!-- Drop Zone / Local Audio Importer -->
+    <div class="drop-zone" id="dropZone">
+      <div style="font-size: 22px; margin-bottom: 4px;">📂</div>
+      <div class="drop-zone-text">
+        <strong>내 음악 파일 불러오기</strong><br>
+        MP3 / WAV / FLAC / MP4 드래그 또는 클릭
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="audio/*,video/mp4" multiple>
+
+    <!-- Playlist Tracks -->
+    <div id="track-list">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">알림</div>
+
+  <!-- Floating Bottom DJ Deck -->
+  <div id="ui-dock">
+    <div class="glass-deck">
+      <!-- Progress Bar -->
+      <div class="progress-row">
+        <span class="time-lbl" id="curTime">00:00</span>
+        <input type="range" id="trackSlider" min="0" max="100" value="0" step="0.1">
+        <span class="time-lbl" id="durTime">00:00</span>
+      </div>
+
+      <div class="deck-row" style="margin-top: 10px;">
+        <!-- Play / Prev / Next -->
+        <div class="controls-group">
+          <button class="dock-btn" id="btnPrev">⏮️ 이전</button>
+          <button class="dock-btn" id="btnPlayPause" style="min-width: 75px; color: var(--neon-cyan);">▶ 재생</button>
+          <button class="dock-btn" id="btnNext">다음 ⏭️</button>
+          <button class="dock-btn active" id="btnLoop" title="한 곡 반복">🔁</button>
+        </div>
+
+        <!-- Phonk Visual Modes -->
+        <div class="controls-group">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;">비주얼:</span>
+          <button class="dock-btn active" id="modeCockpit">🏎️ 계기판</button>
+          <button class="dock-btn" id="modeTouge">🌌 심야고속</button>
+          <button class="dock-btn" id="modeVortex">⚡ 듀얼미러</button>
+          <button class="dock-btn" id="modeVhs">📼 VHS 90s</button>
+          <button class="dock-btn" id="btnToggleShake" title="화면 확대 및 흔들림 강도 조절 (끔 / 약하게 / 강하게)">📳 흔들림: 끔 (편안함)</button>
+        </div>
+
+        <!-- Phonk Audio FX Toggles -->
+        <div class="controls-group">
+          <button class="dock-btn fx-btn active" id="fxBassBoost" title="808 서브 베이스 부스트 및 소프트 클리퍼 왜곡">🔥 808 BOOST</button>
+          <button class="dock-btn fx-btn active" id="fxCowbell" title="퐁크의 상징 트랩 카우벨 대역 강조">🔔 COWBELL</button>
+          <button class="dock-btn fx-btn" id="fxSlowed" title="슬로우드 + 리버브 감성 심야 모드">🌙 SLOWED</button>
+          <button class="dock-btn fx-btn" id="fxSpedUp" title="1.25x 스피드업 나이트코어 퐁크">⚡ SPEED 1.25x</button>
+        </div>
+
+        <!-- Volume -->
+        <div class="controls-group" style="align-items: center; gap: 6px;">
+          <span style="font-size: 11px; color: rgba(255,255,255,0.6);">VOL</span>
+          <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.05" value="0.75">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tip-bar">단축키: [Space] 재생/정지 · [T] 테이프 스톱 · [P] 트랙 모음 · [H] UI 숨김 · [F] 전체화면</div>
+
+  <script>
+    /* ==========================================================================
+       1. Global State & Phonk Track Vault
+       ========================================================================== */
+    const state = {
+      visualMode: 'cockpit', // 'cockpit', 'touge', 'vortex', 'vhs'
+      zenMode: false,
+      isPlaying: false,
+      isLooping: true,
+      currentTrackIdx: 0,
+      bassBoost: true,
+      cowbellBoost: true,
+      slowedReverb: false,
+      spedUp: false,
+      masterVolume: 0.75,
+      shakeIntensity: 'off', // 'off', 'subtle', 'high' (default 'off' for comfortable viewing)
+      // Audio Reactivity
+      subBass: 0,
+      punchBass: 0,
+      cowbellMid: 0,
+      highTreble: 0,
+      springZoom: 1.0,
+      springVelocity: 0,
+      cameraShakeX: 0,
+      cameraShakeY: 0,
+      // Vehicle Cockpit simulation state
+      rpm: 1200,
+      speedKmh: 45,
+      boostPsi: 0.2,
+      driftAngle: 0,
+      tireSmoke: [],
+      speedStreaks: []
+    };
+
+    // DOM References
+    const canvas = document.getElementById('phonkCanvas');
+    const ctx = canvas.getContext('2d');
+    const stageContainer = document.getElementById('stage-container');
+    const vhsOverlay = document.getElementById('vhs-overlay');
+    const trackNameEl = document.getElementById('track-name');
+    const trackCountEl = document.getElementById('track-count');
+    const curTimeEl = document.getElementById('curTime');
+    const durTimeEl = document.getElementById('durTime');
+    const trackSlider = document.getElementById('trackSlider');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnLoop = document.getElementById('btnLoop');
+    const btnTapeStop = document.getElementById('btnTapeStop');
+    const btnTogglePlaylist = document.getElementById('btnTogglePlaylist');
+    const btnClosePlaylist = document.getElementById('btnClosePlaylist');
+    const playlistDrawer = document.getElementById('playlist-drawer');
+    const trackListEl = document.getElementById('track-list');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const toast = document.getElementById('toast');
+    const volSlider = document.getElementById('volSlider');
+    const btnZenMode = document.getElementById('btnZenMode');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+
+    const fxBassBoost = document.getElementById('fxBassBoost');
+    const fxCowbell = document.getElementById('fxCowbell');
+    const fxSlowed = document.getElementById('fxSlowed');
+    const fxSpedUp = document.getElementById('fxSpedUp');
+    const btnToggleShake = document.getElementById('btnToggleShake');
+
+    const modeButtons = {
+      cockpit: document.getElementById('modeCockpit'),
+      touge: document.getElementById('modeTouge'),
+      vortex: document.getElementById('modeVortex'),
+      vhs: document.getElementById('modeVhs')
+    };
+
+    let toastTimer = null;
+    function showToast(msg) {
+      toast.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    /* ==========================================================================
+       2. Web Audio API Engine & Procedural Phonk Synthesizer
+       ========================================================================== */
+    class PhonkAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.analyser = null;
+        this.sourceNode = null;
+        this.audioEl = new Audio();
+        this.audioEl.crossOrigin = 'anonymous';
+
+        // Filters for Phonk Signature Sound
+        this.bassBoostFilter = null;
+        this.cowbellFilter = null;
+        this.convolver = null;
+        this.dryGain = null;
+        this.wetGain = null;
+        this.distortionNode = null;
+        this.masterGainNode = null;
+
+        this.freqData = null;
+        this.isSynthPlaying = false;
+        this.synthTimer = null;
+        this.synthStep = 0;
+        this.isInitialized = false;
+
+        this.audioEl.addEventListener('ended', () => {
+          if (state.isLooping) {
+            this.audioEl.currentTime = 0;
+            this.audioEl.play();
+          } else {
+            playNextTrack();
+          }
+        });
+
+        this.audioEl.addEventListener('timeupdate', () => {
+          if (!this.isSynthPlaying && this.audioEl.duration) {
+            trackSlider.value = (this.audioEl.currentTime / this.audioEl.duration) * 100;
+            curTimeEl.innerText = formatTime(this.audioEl.currentTime);
+            durTimeEl.innerText = formatTime(this.audioEl.duration);
+          }
+        });
+      }
+
+      init() {
+        if (this.isInitialized) return;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContextClass();
+
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 1024;
+        this.analyser.smoothingTimeConstant = 0.82;
+        this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+
+        // 808 Sub-Bass Low-Shelf Boost Filter
+        this.bassBoostFilter = this.ctx.createBiquadFilter();
+        this.bassBoostFilter.type = 'lowshelf';
+        this.bassBoostFilter.frequency.setValueAtTime(80, this.ctx.currentTime);
+        this.bassBoostFilter.gain.setValueAtTime(state.bassBoost ? 10.5 : 0, this.ctx.currentTime);
+
+        // 808 Cowbell Peaking Filter (High-Mid bite)
+        this.cowbellFilter = this.ctx.createBiquadFilter();
+        this.cowbellFilter.type = 'peaking';
+        this.cowbellFilter.frequency.setValueAtTime(1450, this.ctx.currentTime);
+        this.cowbellFilter.Q.setValueAtTime(1.8, this.ctx.currentTime);
+        this.cowbellFilter.gain.setValueAtTime(state.cowbellBoost ? 8.5 : 0, this.ctx.currentTime);
+
+        // Soft-Clipper Distortion Curve
+        this.distortionNode = this.ctx.createWaveShaper();
+        this.distortionNode.curve = this.makeSoftDistortionCurve(25);
+        this.distortionNode.oversample = '2x';
+
+        // Wet/Dry Reverb for Slowed + Reverb mode
+        this.convolver = this.createProceduralReverb(2.8, 1.8);
+        this.dryGain = this.ctx.createGain();
+        this.wetGain = this.ctx.createGain();
+        this.wetGain.gain.setValueAtTime(state.slowedReverb ? 0.45 : 0, this.ctx.currentTime);
+
+        // Master Gain
+        this.masterGainNode = this.ctx.createGain();
+        this.masterGainNode.gain.setValueAtTime(state.masterVolume, this.ctx.currentTime);
+
+        // Connect Local Audio Element
+        this.sourceNode = this.ctx.createMediaElementSource(this.audioEl);
+
+        // Connect graph: Source -> Bass Boost -> Cowbell -> Distortion -> (Dry / Wet) -> Master -> Analyser -> Destination
+        this.sourceNode.connect(this.bassBoostFilter);
+        this.bassBoostFilter.connect(this.cowbellFilter);
+        this.cowbellFilter.connect(this.distortionNode);
+
+        this.distortionNode.connect(this.dryGain);
+        this.distortionNode.connect(this.convolver);
+        this.convolver.connect(this.wetGain);
+
+        this.dryGain.connect(this.masterGainNode);
+        this.wetGain.connect(this.masterGainNode);
+
+        this.masterGainNode.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+
+        this.isInitialized = true;
+      }
+
+      makeSoftDistortionCurve(k) {
+        const n = 22050;
+        const curve = new Float32Array(n);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < n; ++i) {
+          const x = (i * 2) / n - 1;
+          curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+      }
+
+      createProceduralReverb(duration, decay) {
+        const rate = this.ctx.sampleRate;
+        const length = rate * duration;
+        const impulse = this.ctx.createBuffer(2, length, rate);
+        const left = impulse.getChannelData(0);
+        const right = impulse.getChannelData(1);
+
+        for (let i = 0; i < length; i++) {
+          const n = i / length;
+          const env = Math.pow(1 - n, decay);
+          left[i] = (Math.random() * 2 - 1) * env;
+          right[i] = (Math.random() * 2 - 1) * env;
+        }
+
+        const conv = this.ctx.createConvolver();
+        conv.buffer = impulse;
+        return conv;
+      }
+
+      updateFX() {
+        if (!this.isInitialized) return;
+        const now = this.ctx.currentTime;
+        this.bassBoostFilter.gain.setTargetAtTime(state.bassBoost ? 10.5 : 0, now, 0.05);
+        this.cowbellFilter.gain.setTargetAtTime(state.cowbellBoost ? 8.5 : 0, now, 0.05);
+        this.wetGain.gain.setTargetAtTime(state.slowedReverb ? 0.45 : 0, now, 0.1);
+
+        let rate = 1.0;
+        if (state.slowedReverb) rate = 0.84;
+        else if (state.spedUp) rate = 1.25;
+
+        this.audioEl.playbackRate = rate;
+      }
+
+      setVolume(val) {
+        if (!this.isInitialized) return;
+        this.masterGainNode.gain.setTargetAtTime(val, this.ctx.currentTime, 0.04);
+      }
+
+      // Vinyl Brake / Tape Stop
+      triggerTapeStop() {
+        if (!this.isInitialized || !state.isPlaying) return;
+        const now = this.ctx.currentTime;
+        const initialRate = this.audioEl.playbackRate;
+
+        // Pitch ramp down
+        let step = 0;
+        const interval = setInterval(() => {
+          step++;
+          this.audioEl.playbackRate = Math.max(0.05, initialRate * (1 - step / 25));
+          if (step >= 25) {
+            clearInterval(interval);
+            setTimeout(() => {
+              this.audioEl.playbackRate = initialRate;
+            }, 500);
+          }
+        }, 18);
+      }
+
+      // Procedural Phonk Drum & 808 Cowbell Synthesizer (Zero External Dependencies)
+      startPhonkSynth() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.isSynthPlaying = true;
+        this.synthStep = 0;
+
+        const bpm = state.slowedReverb ? 116 : (state.spedUp ? 170 : 142);
+        const stepInterval = (60 / bpm) / 4 * 1000; // 16th note steps
+
+        // Menacing Minor Phonk Cowbell Hook Scales (Hz)
+        // Authentic TR-808 cowbell uses two square wave oscillators tuned to ~587Hz & 845Hz
+        const cowbellMelodies = [
+          [587.33, 0, 587.33, 659.25, 0, 783.99, 0, 659.25, 587.33, 0, 880.00, 0, 783.99, 0, 587.33, 0],
+          [587.33, 587.33, 0, 739.99, 0, 659.25, 0, 587.33, 0, 523.25, 0, 587.33, 0, 880.00, 783.99, 0]
+        ];
+
+        let melodyIdx = 0;
+
+        const synthTick = () => {
+          if (!state.isPlaying || !this.isSynthPlaying) return;
+          const now = this.ctx.currentTime;
+          const step = this.synthStep % 16;
+          const bar = Math.floor(this.synthStep / 16);
+
+          // 1. Kick on steps 0, 6, 8, 14 (Hard Trap / Phonk Kick)
+          if (step === 0 || step === 6 || step === 8 || step === 14) {
+            this.playKick(now);
+          }
+
+          // 2. Trap Snare on steps 4, 12
+          if (step === 4 || step === 12) {
+            this.playSnare(now);
+          }
+
+          // 3. Hi-hat rolls (every 8th or 16th)
+          if (step % 2 === 0 || (step >= 12 && Math.random() > 0.3)) {
+            this.playHiHat(now);
+          }
+
+          // 4. Distorted 808 Sub-Bass Glide on beat 0 and 8
+          if (step === 0 || step === 8) {
+            const bassFreq = (step === 0) ? 38.89 : 43.65; // D1 or F1 sub
+            this.playSubBass(now, bassFreq);
+          }
+
+          // 5. Iconic 808 Cowbell Lead
+          const melody = cowbellMelodies[melodyIdx % cowbellMelodies.length];
+          const cowFreq = melody[step];
+          if (cowFreq > 0) {
+            this.playCowbell(now, cowFreq);
+          }
+
+          if (this.synthStep % 64 === 0) {
+            melodyIdx++;
+          }
+
+          this.synthStep++;
+          this.synthTimer = setTimeout(synthTick, stepInterval);
+        };
+
+        synthTick();
+      }
+
+      playKick(time) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.frequency.setValueAtTime(145, time);
+        osc.frequency.exponentialRampToValueAtTime(42, time + 0.12);
+
+        gain.gain.setValueAtTime(1.1, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
+
+        osc.connect(gain);
+        gain.connect(this.bassBoostFilter);
+        osc.start(time);
+        osc.stop(time + 0.35);
+      }
+
+      playSnare(time) {
+        // Noise + body
+        const bufferSize = this.ctx.sampleRate * 0.18;
+        const noiseBuf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.4;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(1200, time);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.7, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGainNode);
+
+        noise.start(time);
+      }
+
+      playHiHat(time) {
+        const bufferSize = this.ctx.sampleRate * 0.04;
+        const buf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.15;
+
+        const hat = this.ctx.createBufferSource();
+        hat.buffer = buf;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(7500, time);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.28, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+
+        hat.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGainNode);
+
+        hat.start(time);
+      }
+
+      playSubBass(time, freq) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, time);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.95, time + 0.6);
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(140, time);
+
+        gain.gain.setValueAtTime(0.85, time);
+        gain.gain.linearRampToValueAtTime(0.7, time + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.bassBoostFilter);
+
+        osc.start(time);
+        osc.stop(time + 0.75);
+      }
+
+      playCowbell(time, freq) {
+        // Dual Square Oscillators for genuine Roland TR-808 cowbell clang
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc1.type = 'square';
+        osc2.type = 'square';
+
+        osc1.frequency.setValueAtTime(freq, time);
+        osc2.frequency.setValueAtTime(freq * 1.45, time); // detuned metallic harmonic
+
+        const bandpass = this.ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(freq * 1.2, time);
+        bandpass.Q.setValueAtTime(2.2, time);
+
+        gain.gain.setValueAtTime(0.55, time);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.38);
+
+        osc1.connect(bandpass);
+        osc2.connect(bandpass);
+        bandpass.connect(gain);
+        gain.connect(this.cowbellFilter);
+
+        osc1.start(time);
+        osc2.start(time);
+        osc1.stop(time + 0.4);
+        osc2.stop(time + 0.4);
+      }
+
+      stopSynth() {
+        this.isSynthPlaying = false;
+        clearTimeout(this.synthTimer);
+      }
+    }
+
+    const soundDeck = new PhonkAudioEngine();
+
+    /* ==========================================================================
+       3. Phonk Track Vault & Playlist Management
+       ========================================================================== */
+    const playlist = [
+      {
+        id: 'p1',
+        title: 'TOKYO DRIFT PROTOCOL (KORDHELL STYLE)',
+        artist: 'PHONK ENGINE',
+        type: 'procedural',
+        bpm: 142
+      },
+      {
+        id: 'p2',
+        title: 'BRAZILIAN RAVE 808 (MONTAGEM DRIFT)',
+        artist: 'PHONK ENGINE',
+        type: 'procedural',
+        bpm: 135
+      },
+      {
+        id: 'p3',
+        title: 'MIDNIGHT TOUGE (SLOWED + REVERB)',
+        artist: 'PHONK ENGINE',
+        type: 'procedural',
+        bpm: 118
+      },
+      {
+        id: 'p4',
+        title: 'DEVIL EYES // MEMPHIS COWBELL',
+        artist: 'PHONK ENGINE',
+        type: 'procedural',
+        bpm: 150
+      }
+    ];
+
+    function renderPlaylistUI() {
+      trackListEl.innerHTML = '';
+      trackCountEl.innerText = playlist.length;
+
+      playlist.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = `playlist-item ${idx === state.currentTrackIdx ? 'active' : ''}`;
+        el.innerHTML = `
+          <div class="item-info">
+            <span class="item-title">${idx + 1}. ${item.title}</span>
+            <span class="item-meta">${item.artist} · ${item.bpm ? item.bpm + ' BPM' : 'Local Track'}</span>
+          </div>
+          <span style="font-size: 11px; color: ${idx === state.currentTrackIdx ? 'var(--neon-cyan)' : 'rgba(255,255,255,0.4)'};">
+            ${idx === state.currentTrackIdx ? '▶ PLAYING' : 'READY'}
+          </span>
+        `;
+        el.addEventListener('click', () => {
+          selectTrack(idx);
+        });
+        trackListEl.appendChild(el);
+      });
+    }
+
+    function selectTrack(idx) {
+      state.currentTrackIdx = idx;
+      const track = playlist[idx];
+      trackNameEl.innerText = track.title;
+      renderPlaylistUI();
+
+      if (track.type === 'procedural') {
+        soundDeck.audioEl.pause();
+        soundDeck.audioEl.currentTime = 0;
+        soundDeck.stopSynth();
+        if (state.isPlaying) {
+          soundDeck.startPhonkSynth();
+        }
+        curTimeEl.innerText = '00:00';
+        durTimeEl.innerText = '∞';
+        trackSlider.value = 0;
+      } else if (track.type === 'local') {
+        soundDeck.stopSynth();
+        soundDeck.init();
+        soundDeck.audioEl.src = track.url;
+        if (state.isPlaying) {
+          soundDeck.audioEl.play().catch(() => {});
+        }
+      }
+
+      showToast(`⚡ 트랙 선택: ${track.title}`);
+    }
+
+    function playTrack() {
+      soundDeck.init();
+      state.isPlaying = true;
+      btnPlayPause.innerText = '⏸️ 일시정지';
+      btnPlayPause.style.color = 'var(--neon-magenta)';
+
+      const track = playlist[state.currentTrackIdx];
+      if (track.type === 'procedural') {
+        soundDeck.startPhonkSynth();
+      } else {
+        soundDeck.audioEl.play().catch(() => {});
+      }
+    }
+
+    function pauseTrack() {
+      state.isPlaying = false;
+      btnPlayPause.innerText = '▶ 재생';
+      btnPlayPause.style.color = 'var(--neon-cyan)';
+
+      soundDeck.stopSynth();
+      soundDeck.audioEl.pause();
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) {
+        pauseTrack();
+        showToast('일시 정지');
+      } else {
+        playTrack();
+        showToast('🔥 퐁크 재생 시작');
+      }
+    }
+
+    function playNextTrack() {
+      const nextIdx = (state.currentTrackIdx + 1) % playlist.length;
+      selectTrack(nextIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function playPrevTrack() {
+      const prevIdx = (state.currentTrackIdx - 1 + playlist.length) % playlist.length;
+      selectTrack(prevIdx);
+      if (!state.isPlaying) playTrack();
+    }
+
+    function formatTime(secs) {
+      if (!secs || isNaN(secs)) return '00:00';
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    /* ==========================================================================
+       4. Local Audio / Video Drag & Drop Loader
+       ========================================================================== */
+    function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      let added = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
+          const url = URL.createObjectURL(file);
+          playlist.push({
+            id: 'local_' + Date.now() + '_' + i,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            artist: 'LOCAL AUDIO',
+            type: 'local',
+            url: url
+          });
+          added++;
+        }
+      }
+
+      if (added > 0) {
+        renderPlaylistUI();
+        showToast(`📂 ${added}개 트랙이 재생목록에 추가되었습니다!`);
+        // Switch to the newly added track
+        selectTrack(playlist.length - added);
+        playTrack();
+      }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'var(--neon-magenta)';
+    });
+
+    window.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = 'rgba(0, 243, 255, 0.35)';
+    });
+
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = 'rgba(0, 243, 255, 0.35)';
+      handleFiles(e.dataTransfer.files);
+    });
+
+    /* ==========================================================================
+       5. Responsive Canvas Sizing
+       ========================================================================== */
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.scale(dpr, dpr);
+
+      initSpeedStreaks();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initSpeedStreaks() {
+      state.speedStreaks = [];
+      for (let i = 0; i < 45; i++) {
+        state.speedStreaks.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          length: Math.random() * 120 + 60,
+          speed: Math.random() * 25 + 20,
+          alpha: Math.random() * 0.7 + 0.3
+        });
+      }
+    }
+
+    /* ==========================================================================
+       6. Real-time Audio Frequency Band Extraction
+       ========================================================================== */
+    function analyzeAudioBands() {
+      if (!soundDeck.analyser) {
+        state.subBass = 0.2;
+        state.punchBass = 0.2;
+        state.cowbellMid = 0.2;
+        state.highTreble = 0.2;
+        return;
+      }
+
+      soundDeck.analyser.getByteFrequencyData(soundDeck.freqData);
+      const data = soundDeck.freqData;
+
+      // Extract Frequency Regions
+      // Sub Bass: 20 - 70 Hz (Bins 0 - 3)
+      let subSum = 0;
+      for (let i = 0; i < 4; i++) subSum += data[i];
+      const targetSub = (subSum / 4) / 255;
+
+      // Punch Kick: 70 - 250 Hz (Bins 4 - 12)
+      let punchSum = 0;
+      for (let i = 4; i < 13; i++) punchSum += data[i];
+      const targetPunch = (punchSum / 9) / 255;
+
+      // Phonk Cowbell Mid: 800 - 2500 Hz (Bins 38 - 110)
+      let cowSum = 0;
+      for (let i = 38; i < 110; i++) cowSum += data[i];
+      const targetCowbell = (cowSum / 72) / 255;
+
+      // Highs / Hats: 6000 - 16000 Hz (Bins 250 - 450)
+      let highSum = 0;
+      for (let i = 250; i < 450; i++) highSum += data[i];
+      const targetHigh = (highSum / 200) / 255;
+
+      // EMA smoothing
+      state.subBass += (targetSub - state.subBass) * 0.35;
+      state.punchBass += (targetPunch - state.punchBass) * 0.45;
+      state.cowbellMid += (targetCowbell - state.cowbellMid) * 0.35;
+      state.highTreble += (targetHigh - state.highTreble) * 0.3;
+
+      // Gentle, Smooth Spring Zoom & Shake Reactivity (Customizable)
+      const kickImpulse = Math.max(0, state.subBass * 1.5 + state.punchBass * 1.0 - 0.7);
+
+      if (state.shakeIntensity === 'off') {
+        state.springZoom = 1.0;
+        state.cameraShakeX = 0;
+        state.cameraShakeY = 0;
+        stageContainer.style.transform = 'none';
+      } else if (state.shakeIntensity === 'subtle') {
+        const targetZoom = 1.0 + Math.min(0.015, kickImpulse * 0.02);
+        state.springZoom += (targetZoom - state.springZoom) * 0.2;
+        if (kickImpulse > 0.4) {
+          state.cameraShakeX = (Math.random() - 0.5) * kickImpulse * 2.5;
+          state.cameraShakeY = (Math.random() - 0.5) * kickImpulse * 2.0;
+        } else {
+          state.cameraShakeX *= 0.7;
+          state.cameraShakeY *= 0.7;
+        }
+        stageContainer.style.transform = `scale(${state.springZoom}) translate(${state.cameraShakeX}px, ${state.cameraShakeY}px)`;
+      } else {
+        // High intensity
+        const targetZoom = 1.0 + Math.min(0.045, kickImpulse * 0.05);
+        state.springZoom += (targetZoom - state.springZoom) * 0.3;
+        if (kickImpulse > 0.4) {
+          state.cameraShakeX = (Math.random() - 0.5) * kickImpulse * 7;
+          state.cameraShakeY = (Math.random() - 0.5) * kickImpulse * 6;
+        } else {
+          state.cameraShakeX *= 0.7;
+          state.cameraShakeY *= 0.7;
+        }
+        stageContainer.style.transform = `scale(${state.springZoom}) translate(${state.cameraShakeX}px, ${state.cameraShakeY}px)`;
+      }
+    }
+
+    /* ==========================================================================
+       7. VISUAL MODE 1: JDM TACHOMETER & DRIFT COCKPIT
+       ========================================================================== */
+    function drawCockpitMode(timeNow) {
+      // Clear Dark Carbon Fiber Canvas
+      ctx.fillStyle = '#06070c';
+      ctx.fillRect(0, 0, width, height);
+
+      const centerX = width * 0.5;
+      const centerY = height * 0.52;
+      const radius = Math.min(width, height) * 0.34;
+
+      // Calculate RPM & Speed based on Audio Beat
+      const targetRpm = 2000 + state.subBass * 5500 + state.punchBass * 2500;
+      state.rpm += (targetRpm - state.rpm) * 0.22;
+      state.speedKmh = Math.round(60 + state.subBass * 160 + state.cowbellMid * 40);
+      state.boostPsi = (state.subBass * 1.8).toFixed(1);
+
+      // Redline Warning Flash on Heavy Bass Drops
+      const isRedline = state.rpm > 7600;
+
+      // 1. Tachometer Outer Bezel Glow
+      ctx.save();
+      const bezelGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.8, centerX, centerY, radius * 1.15);
+      bezelGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      bezelGrad.addColorStop(0.85, isRedline ? 'rgba(255, 0, 85, 0.35)' : 'rgba(0, 243, 255, 0.2)');
+      bezelGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bezelGrad;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 1.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer Meter Ring
+      ctx.strokeStyle = isRedline ? 'var(--neon-magenta)' : 'rgba(0, 243, 255, 0.5)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, Math.PI * 0.75, Math.PI * 2.25);
+      ctx.stroke();
+
+      // Gauge Tick Marks (0 to 9,000 RPM)
+      const maxTicks = 45;
+      for (let i = 0; i <= maxTicks; i++) {
+        const ratio = i / maxTicks;
+        const angle = Math.PI * 0.75 + ratio * (Math.PI * 1.5);
+        const isMajor = i % 5 === 0;
+        const tickLen = isMajor ? 18 : 9;
+        const isDangerZone = i >= 35; // 7000+ RPM redline
+
+        const x1 = centerX + Math.cos(angle) * (radius - 5);
+        const y1 = centerY + Math.sin(angle) * (radius - 5);
+        const x2 = centerX + Math.cos(angle) * (radius - 5 - tickLen);
+        const y2 = centerY + Math.sin(angle) * (radius - 5 - tickLen);
+
+        ctx.strokeStyle = isDangerZone ? '#ff0055' : (isMajor ? '#00f3ff' : 'rgba(255,255,255,0.4)');
+        ctx.lineWidth = isMajor ? 3 : 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Major Tick Labels (0, 1, 2... 9)
+        if (isMajor) {
+          const num = i / 5;
+          const tx = centerX + Math.cos(angle) * (radius - 36);
+          const ty = centerY + Math.sin(angle) * (radius - 36);
+          ctx.fillStyle = isDangerZone ? '#ff0055' : '#fff';
+          ctx.font = 'bold 14px Orbitron, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(num, tx, ty);
+        }
+      }
+
+      // 2. Needle Indicator (Sweeping to the RPM)
+      const needleRatio = Math.min(1.0, Math.max(0, state.rpm / 9000));
+      const needleAngle = Math.PI * 0.75 + needleRatio * (Math.PI * 1.5);
+
+      ctx.save();
+      ctx.strokeStyle = isRedline ? '#ff0055' : '#ffe600';
+      ctx.shadowColor = isRedline ? '#ff0055' : '#ffe600';
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + Math.cos(needleAngle) * (radius - 22),
+        centerY + Math.sin(needleAngle) * (radius - 22)
+      );
+      ctx.stroke();
+      ctx.restore();
+
+      // Needle Center Hub
+      ctx.fillStyle = '#16192b';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = isRedline ? '#ff0055' : '#00f3ff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 3. Digital Speedometer & Gear HUD in Center
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 42px Orbitron, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${state.speedKmh}`, centerX, centerY + 65);
+
+      ctx.font = '11px Orbitron, sans-serif';
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.8)';
+      ctx.fillText('KM/H // SPEED', centerX, centerY + 95);
+
+      // Boost & Redline Badges
+      ctx.font = 'bold 13px Orbitron, sans-serif';
+      ctx.fillStyle = isRedline ? '#ff0055' : 'rgba(255, 230, 0, 0.85)';
+      ctx.fillText(`BOOST +${state.boostPsi} BAR`, centerX, centerY - 65);
+
+      if (isRedline) {
+        ctx.fillStyle = '#ff0055';
+        ctx.font = 'bold 15px Orbitron, sans-serif';
+        ctx.fillText('REV LIMIT // 限界', centerX, centerY - 95);
+      }
+
+      // 4. Equalizer Spectrum Bars Under Dashboard
+      const barCount = 36;
+      const barW = (width * 0.75) / barCount;
+      const startX = width * 0.125;
+      const baseY = height * 0.88;
+
+      for (let b = 0; b < barCount; b++) {
+        const bin = Math.floor(b * (256 / barCount));
+        const val = soundDeck.freqData ? soundDeck.freqData[bin] / 255 : Math.random() * 0.3;
+        const barH = val * 65;
+
+        const grad = ctx.createLinearGradient(0, baseY - barH, 0, baseY);
+        grad.addColorStop(0, '#ff0055');
+        grad.addColorStop(0.5, '#ffe600');
+        grad.addColorStop(1, '#00f3ff');
+
+        ctx.fillStyle = grad;
+        ctx.fillRect(startX + b * barW, baseY - barH, barW - 3, barH);
+      }
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       8. VISUAL MODE 2: CYBER CITY TOUGE DRIFT RUNNER
+       ========================================================================== */
+    function drawTougeMode(timeNow) {
+      // Dark Sky with Cyber Neon Grid
+      ctx.fillStyle = '#06060c';
+      ctx.fillRect(0, 0, width, height);
+
+      const horizonY = height * 0.52;
+
+      // Distant City Skyline Silhouettes
+      ctx.fillStyle = '#0c0f1a';
+      const buildingCount = 20;
+      const bWidth = width / buildingCount;
+      for (let i = 0; i < buildingCount; i++) {
+        const bHeight = 40 + Math.sin(i * 1.5) * 60 + (i % 3) * 35;
+        ctx.fillRect(i * bWidth, horizonY - bHeight, bWidth - 2, bHeight);
+        // Window lights
+        if (i % 2 === 0) {
+          ctx.fillStyle = 'rgba(0, 243, 255, 0.35)';
+          ctx.fillRect(i * bWidth + 4, horizonY - bHeight + 10, 4, 4);
+          ctx.fillRect(i * bWidth + 12, horizonY - bHeight + 25, 4, 4);
+          ctx.fillStyle = '#0c0f1a';
+        }
+      }
+
+      // Retro 3D Highway Perspective Floor
+      const roadGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+      roadGrad.addColorStop(0, '#0a0d16');
+      roadGrad.addColorStop(1, '#1b0e1e');
+      ctx.fillStyle = roadGrad;
+      ctx.fillRect(0, horizonY, width, height - horizonY);
+
+      // Perspective Grid Lines
+      ctx.strokeStyle = 'rgba(255, 0, 85, 0.45)';
+      ctx.lineWidth = 1.5;
+
+      const lines = 12;
+      for (let l = -lines; l <= lines; l++) {
+        const xAtBottom = width * 0.5 + l * 90;
+        ctx.beginPath();
+        ctx.moveTo(width * 0.5, horizonY);
+        ctx.lineTo(xAtBottom, height);
+        ctx.stroke();
+      }
+
+      // Moving Horizontal Distance Bars (Speed illusion)
+      const speedOffset = (timeNow * 0.45 * (1 + state.subBass * 1.5)) % 60;
+      ctx.strokeStyle = 'rgba(0, 243, 255, 0.4)';
+      for (let h = 0; h < 14; h++) {
+        const d = (h * 60 + speedOffset) / 840;
+        const y = horizonY + Math.pow(d, 2.2) * (height - horizonY);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Drifting JDM Car Silhouette in Center
+      const carX = width * 0.5 + Math.sin(timeNow * 0.002) * 90 * state.subBass;
+      const carY = height * 0.78;
+      const carW = 120;
+      const carH = 45;
+
+      // Tire Smoke Particles
+      if (state.subBass > 0.4) {
+        state.tireSmoke.push({
+          x: carX - 45 + (Math.random() - 0.5) * 15,
+          y: carY + 20,
+          vx: -Math.random() * 3 - 1,
+          vy: -Math.random() * 1.5,
+          radius: Math.random() * 12 + 8,
+          alpha: 0.6
+        });
+        state.tireSmoke.push({
+          x: carX + 45 + (Math.random() - 0.5) * 15,
+          y: carY + 20,
+          vx: Math.random() * 3 + 1,
+          vy: -Math.random() * 1.5,
+          radius: Math.random() * 12 + 8,
+          alpha: 0.6
+        });
+      }
+
+      for (let s = state.tireSmoke.length - 1; s >= 0; s--) {
+        const smk = state.tireSmoke[s];
+        smk.x += smk.vx;
+        smk.y += smk.vy;
+        smk.radius += 0.4;
+        smk.alpha -= 0.02;
+        if (smk.alpha <= 0) {
+          state.tireSmoke.splice(s, 1);
+        } else {
+          ctx.fillStyle = `rgba(0, 243, 255, ${smk.alpha * 0.4})`;
+          ctx.beginPath();
+          ctx.arc(smk.x, smk.y, smk.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Car Rear Chassis
+      ctx.save();
+      ctx.translate(carX, carY);
+      ctx.fillStyle = '#08090e';
+      ctx.strokeStyle = '#00f3ff';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.roundRect(-carW / 2, -carH / 2, carW, carH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Rear Neon Tail Lights (Glowing Crimson)
+      ctx.fillStyle = '#ff0055';
+      ctx.shadowColor = '#ff0055';
+      ctx.shadowBlur = 24 * (1 + state.subBass);
+
+      ctx.fillRect(-carW / 2 + 10, -carH / 2 + 10, 32, 10);
+      ctx.fillRect(carW / 2 - 42, -carH / 2 + 10, 32, 10);
+      ctx.shadowBlur = 0;
+
+      // License Plate: 808 PHONK
+      ctx.fillStyle = '#ffe600';
+      ctx.font = 'bold 9px Orbitron, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('808 // 狂気', 0, 10);
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       9. VISUAL MODE 3: AGGRESSIVE 808 DUAL MIRROR VORTEX
+       ========================================================================== */
+    function drawVortexMode(timeNow) {
+      ctx.fillStyle = '#05060b';
+      ctx.fillRect(0, 0, width, height);
+
+      const cx = width * 0.5;
+      const cy = height * 0.5;
+      const radius = Math.min(width, height) * 0.22;
+
+      // Central Throbbing 808 Core
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const coreR = radius * (0.8 + state.subBass * 0.65);
+      const coreGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, coreR);
+      coreGrad.addColorStop(0, '#fff');
+      coreGrad.addColorStop(0.35, '#ff0055');
+      coreGrad.addColorStop(0.7, '#9d00ff');
+      coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Dual Mirror Radial Spectrum Spokes
+      const spokes = 72;
+      for (let i = 0; i < spokes; i++) {
+        const bin = Math.floor((i / spokes) * 128);
+        const val = soundDeck.freqData ? soundDeck.freqData[bin] / 255 : Math.random() * 0.4;
+        const length = val * (Math.min(width, height) * 0.28);
+
+        const angle1 = (i / spokes) * Math.PI * 2;
+
+        const x1 = cx + Math.cos(angle1) * (radius + 10);
+        const y1 = cy + Math.sin(angle1) * (radius + 10);
+        const x2 = cx + Math.cos(angle1) * (radius + 10 + length);
+        const y2 = cy + Math.sin(angle1) * (radius + 10 + length);
+
+        ctx.strokeStyle = i % 2 === 0 ? 'var(--neon-cyan)' : 'var(--neon-magenta)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      // Outer Pulse Shockwave Rings
+      ctx.strokeStyle = 'rgba(255, 230, 0, ' + state.subBass + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 1.6 + state.punchBass * 80, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       10. VISUAL MODE 4: VHS 90s RETRO BOOTLEG TAPE
+       ========================================================================== */
+    function drawVhsMode(timeNow) {
+      drawCockpitMode(timeNow); // Base layer
+
+      // Add 90s OSD Text (PLAY ▶, SP, Timecode)
+      ctx.save();
+      ctx.font = 'bold 22px Courier New, monospace';
+      ctx.fillStyle = '#00f3ff';
+      ctx.shadowColor = '#00f3ff';
+      ctx.shadowBlur = 8;
+
+      ctx.fillText('PLAY ▶ SP', 50, 90);
+      ctx.fillText('AUTO TRACKING: ON', 50, 125);
+
+      const d = new Date();
+      const tc = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}:${String(Math.floor(d.getMilliseconds()/10)).padStart(2,'0')}`;
+      ctx.fillText(tc, width - 260, 90);
+      ctx.fillText('CH 03 // JDM', width - 260, 125);
+
+      // Occasional Tracking Glitch Bar
+      if (Math.random() < 0.12 * (1 + state.subBass)) {
+        const gy = Math.random() * height;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.fillRect(0, gy, width, Math.random() * 15 + 4);
+      }
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       11. Master Render Loop (60-144 FPS)
+       ========================================================================== */
+    function render(timeNow) {
+      analyzeAudioBands();
+
+      if (state.visualMode === 'cockpit') {
+        drawCockpitMode(timeNow);
+      } else if (state.visualMode === 'touge') {
+        drawTougeMode(timeNow);
+      } else if (state.visualMode === 'vortex') {
+        drawVortexMode(timeNow);
+      } else if (state.visualMode === 'vhs') {
+        drawVhsMode(timeNow);
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    /* ==========================================================================
+       12. Event Listeners & Interactive Handlers
+       ========================================================================== */
+    btnPlayPause.addEventListener('click', togglePlay);
+    btnNext.addEventListener('click', playNextTrack);
+    btnPrev.addEventListener('click', playPrevTrack);
+
+    btnLoop.addEventListener('click', () => {
+      state.isLooping = !state.isLooping;
+      btnLoop.classList.toggle('active', state.isLooping);
+      showToast(state.isLooping ? '🔁 한 곡 반복 켜짐' : '🔁 한 곡 반복 꺼짐');
+    });
+
+    // Tape Stop
+    btnTapeStop.addEventListener('click', () => {
+      soundDeck.triggerTapeStop();
+      showToast('🛑 TAPE STOP EFFECT!');
+    });
+
+    // Shake Toggle Handler
+    btnToggleShake.addEventListener('click', () => {
+      if (state.shakeIntensity === 'off') {
+        state.shakeIntensity = 'subtle';
+        btnToggleShake.innerText = '📳 흔들림: 약하게';
+        showToast('📳 화면 흔들림: 약하게 (부드러운 반응)');
+      } else if (state.shakeIntensity === 'subtle') {
+        state.shakeIntensity = 'high';
+        btnToggleShake.innerText = '📳 흔들림: 강하게';
+        showToast('📳 화면 흔들림: 강하게 (역동적)');
+      } else {
+        state.shakeIntensity = 'off';
+        btnToggleShake.innerText = '📳 흔들림: 끔 (편안함)';
+        showToast('📳 화면 흔들림 및 줌 끔 (편안한 화면)');
+      }
+    });
+
+    // Visual Mode Switches
+    Object.keys(modeButtons).forEach(m => {
+      modeButtons[m].addEventListener('click', () => {
+        state.visualMode = m;
+        Object.keys(modeButtons).forEach(other => modeButtons[other].classList.remove('active'));
+        modeButtons[m].classList.add('active');
+        vhsOverlay.style.opacity = (m === 'vhs') ? '0.9' : '0.55';
+        showToast(`비주얼 모드: ${modeButtons[m].innerText}`);
+      });
+    });
+
+    // FX Toggles
+    fxBassBoost.addEventListener('click', () => {
+      state.bassBoost = !state.bassBoost;
+      fxBassBoost.classList.toggle('active', state.bassBoost);
+      soundDeck.updateFX();
+      showToast(state.bassBoost ? '🔥 808 BASS BOOST 켜짐 (+10.5dB)' : '808 BASS BOOST 꺼짐');
+    });
+
+    fxCowbell.addEventListener('click', () => {
+      state.cowbellBoost = !state.cowbellBoost;
+      fxCowbell.classList.toggle('active', state.cowbellBoost);
+      soundDeck.updateFX();
+      showToast(state.cowbellBoost ? '🔔 COWBELL RESONANCE 켜짐' : 'COWBELL 꺼짐');
+    });
+
+    fxSlowed.addEventListener('click', () => {
+      state.slowedReverb = !state.slowedReverb;
+      if (state.slowedReverb) state.spedUp = false;
+      fxSlowed.classList.toggle('active', state.slowedReverb);
+      fxSpedUp.classList.toggle('active', state.spedUp);
+      soundDeck.updateFX();
+      showToast(state.slowedReverb ? '🌙 SLOWED + REVERB 활성화' : '정상 속도 복귀');
+    });
+
+    fxSpedUp.addEventListener('click', () => {
+      state.spedUp = !state.spedUp;
+      if (state.spedUp) state.slowedReverb = false;
+      fxSpedUp.classList.toggle('active', state.spedUp);
+      fxSlowed.classList.toggle('active', state.slowedReverb);
+      soundDeck.updateFX();
+      showToast(state.spedUp ? '⚡ SPEED 1.25x 나이트코어 모드' : '정상 속도 복귀');
+    });
+
+    // Volume Slider
+    volSlider.addEventListener('input', (e) => {
+      state.masterVolume = parseFloat(e.target.value);
+      soundDeck.setVolume(state.masterVolume);
+    });
+
+    // Track Scrubber
+    trackSlider.addEventListener('input', (e) => {
+      if (soundDeck.audioEl.duration && !soundDeck.isSynthPlaying) {
+        soundDeck.audioEl.currentTime = (parseFloat(e.target.value) / 100) * soundDeck.audioEl.duration;
+      }
+    });
+
+    // Playlist Drawer Toggles
+    btnTogglePlaylist.addEventListener('click', () => {
+      playlistDrawer.classList.toggle('open');
+    });
+    btnClosePlaylist.addEventListener('click', () => {
+      playlistDrawer.classList.remove('open');
+    });
+
+    // Zen Mode & Fullscreen
+    function toggleZenMode() {
+      state.zenMode = !state.zenMode;
+      document.body.classList.toggle('zen-mode', state.zenMode);
+      showToast(state.zenMode ? '👁️ 감상 모드 (단축키 [H]로 다시 표시)' : '기본 모드로 복귀');
+    }
+    btnZenMode.addEventListener('click', toggleZenMode);
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 't' || e.key === 'T') {
+        soundDeck.triggerTapeStop();
+      } else if (e.key === 'p' || e.key === 'P') {
+        playlistDrawer.classList.toggle('open');
+      } else if (e.key === 'h' || e.key === 'H') {
+        toggleZenMode();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    // Auto-init
+    resizeCanvas();
+    renderPlaylistUI();
+    requestAnimationFrame(render);
+    showToast('⚡ PHONK STATION 준비 완료! [Space]를 눌러 비트를 재생하세요.');
+  </script>
+</body>
+</html>
