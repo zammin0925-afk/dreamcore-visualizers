@@ -2,7 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#02060b">
   <title>DREAMCORE // 기억의 잔상 (Melancholic Ethereal Liminality)</title>
   <style>
     :root {
@@ -514,6 +517,152 @@
     input[type="file"]#fileInput {
       display: none;
     }
+
+    /* ==========================================================================
+       RESPONSIVE & PHONE MODE (9:16 세로 뷰포트 & 스마트폰 최적화)
+       ========================================================================== */
+    :root {
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Desktop Phone Mockup Frame */
+    body.phone-mode-active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #0e111d 0%, #030408 100%) !important;
+    }
+
+    body.phone-mode-active #stage-container {
+      width: min(420px, 94vw) !important;
+      height: min(860px, 92vh) !important;
+      position: relative !important;
+      border-radius: 44px !important;
+      border: 3px solid rgba(255, 255, 255, 0.2) !important;
+      box-shadow: 0 0 0 10px #131522, 0 35px 90px rgba(0, 0, 0, 0.9) !important;
+      overflow: hidden !important;
+    }
+
+    /* Notch Indicator on Desktop Phone Mockup */
+    body.phone-mode-active #stage-container::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 22px;
+      background: #000;
+      border-radius: 12px;
+      z-index: 60;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Mobile & Portrait Responsive Styles */
+    @media (max-width: 768px), (orientation: portrait) {
+      #dream-hud {
+        top: max(14px, var(--safe-top));
+        left: 14px;
+        max-width: calc(100vw - 120px);
+      }
+
+      .dream-title {
+        font-size: 13px !important;
+        letter-spacing: 2px !important;
+      }
+
+      .dream-timestamp {
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
+      }
+
+      .track-badge {
+        padding: 4px 10px !important;
+        font-size: 11px !important;
+        max-width: 220px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+
+      #billboardStatus, .liminal-quote {
+        display: none !important;
+      }
+
+      #top-right-tools {
+        top: max(14px, var(--safe-top));
+        right: 14px;
+        gap: 6px !important;
+      }
+
+      .hud-btn {
+        padding: 6px 9px !important;
+        font-size: 11px !important;
+        border-radius: 10px !important;
+      }
+
+      /* Mobile UI Bottom Dock */
+      #ui-dock {
+        bottom: max(14px, var(--safe-bottom));
+        width: min(94%, 440px) !important;
+        gap: 6px !important;
+      }
+
+      .glass-deck {
+        padding: 10px 14px !important;
+        border-radius: 20px !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      }
+
+      .progress-row {
+        gap: 8px !important;
+      }
+
+      .time-lbl {
+        font-size: 10px !important;
+        min-width: 32px !important;
+      }
+
+      .deck-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+        align-items: stretch !important;
+      }
+
+      .deck-row .controls-group {
+        justify-content: center !important;
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+      }
+
+      .pill-btn {
+        padding: 5px 9px !important;
+        font-size: 11px !important;
+        border-radius: 10px !important;
+        gap: 3px !important;
+      }
+
+      .vol-slider {
+        width: 48px !important;
+      }
+
+      #tip-bar {
+        display: none !important;
+      }
+
+      #playlist-drawer {
+        width: 100% !important;
+        max-width: 340px !important;
+        right: -100% !important;
+      }
+
+      #playlist-drawer.open {
+        right: 0 !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -553,6 +702,9 @@
     </a>
     <button class="hud-btn" id="btnTogglePlaylist" title="트랙 목록 및 내 파일 불러오기 (단축키: P)">
       📑 트랙 모음 (<span id="track-count">3</span>)
+    </button>
+    <button class="hud-btn" id="btnPhoneMode" title="스마트폰 세로 뷰포트 / 폰 모드 토글 (단축키: M)">
+      📱 폰 모드
     </button>
     <button class="hud-btn" id="btnZenMode" title="UI 숨김 / 감상 모드 (단축키: H)">
       👁️
@@ -639,7 +791,8 @@
        1. Global State & Melancholic Quotes
        ========================================================================== */
     const state = {
-      scene: 'seaRails', // 'seaRails', 'telephone', 'platform', 'theater', 'snowRoad'
+      scene: 'seaRails',
+    phoneMode: false, // 'seaRails', 'telephone', 'platform', 'theater', 'snowRoad'
       zenMode: false,
       isPlaying: false,
       isLooping: true,
@@ -1236,8 +1389,14 @@
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     function resizeCanvas() {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const container = document.getElementById('stage-container');
+      if (document.body.classList.contains('phone-mode-active') && container) {
+        width = container.clientWidth;
+        height = container.clientHeight;
+      } else {
+        width = window.innerWidth;
+        height = window.innerHeight;
+      }
       dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       canvas.width = width * dpr;
@@ -1431,7 +1590,8 @@
        6. SCENE 1: SUBMERGED RAILROAD & GIANT OCEAN MONOLITH BILLBOARD
        ========================================================================== */
     function drawSeaRailsScene(timeNow) {
-      const horizonY = height * 0.58;
+      const isPortrait = height > width * 1.1;
+      const horizonY = isPortrait ? height * 0.48 : height * 0.58;
 
       const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
       skyGrad.addColorStop(0, '#1c1b30');
@@ -1459,12 +1619,12 @@
       ctx.fillStyle = waterGrad;
       ctx.fillRect(0, horizonY, width, height - horizonY);
 
-      const railCenterX = width * 0.48;
+      const railCenterX = isPortrait ? width * 0.50 : width * 0.48;
 
-      const bbW = Math.min(width * 0.36, 360);
+      const bbW = isPortrait ? Math.min(width * 0.84, 380) : Math.min(width * 0.36, 360);
       const bbH = bbW * 0.58;
       const bbX = railCenterX - bbW / 2;
-      const bbBottomY = horizonY - 14;
+      const bbBottomY = horizonY - (isPortrait ? 20 : 14);
       const bbY = bbBottomY - bbH;
 
       ctx.save();
@@ -1566,7 +1726,7 @@
       for (let i = 0; i < trackRows; i++) {
         const ratio = i / trackRows;
         const y = horizonY + Math.pow(ratio, 1.8) * (height - horizonY);
-        const tieW = 40 + ratio * 280;
+        const tieW = isPortrait ? (35 + ratio * (width * 0.72)) : (40 + ratio * 280);
         const tieH = 2 + ratio * 4;
 
         ctx.fillStyle = `rgba(28, 26, 36, ${0.4 + ratio * 0.55})`;
@@ -1579,20 +1739,22 @@
       ctx.strokeStyle = 'rgba(180, 167, 214, 0.65)';
       ctx.lineWidth = 2.5;
 
+      const rTop = isPortrait ? bbW * 0.32 : 18;
+      const rBot = isPortrait ? width * 0.38 : 130;
       ctx.beginPath();
-      ctx.moveTo(railCenterX - 18, horizonY);
-      ctx.lineTo(railCenterX - 130, height);
+      ctx.moveTo(railCenterX - rTop, horizonY);
+      ctx.lineTo(railCenterX - rBot, height);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(railCenterX + 18, horizonY);
-      ctx.lineTo(railCenterX + 130, height);
+      ctx.moveTo(railCenterX + rTop, horizonY);
+      ctx.lineTo(railCenterX + rBot, height);
       ctx.stroke();
 
       ctx.restore();
 
-      const lampX = width * 0.72;
-      const lampBaseY = horizonY + 75;
+      const lampX = isPortrait ? width * 0.88 : width * 0.72;
+      const lampBaseY = horizonY + (isPortrait ? 50 : 75);
       const lampHeight = 170;
       const lampHeadY = lampBaseY - lampHeight;
 
@@ -1653,6 +1815,7 @@
        7. SCENE 2: RAINY DUSK, GIANT SKY BILLBOARD & SILHOUETTE TELEPHONE WIRES
        ========================================================================== */
     function drawTelephoneScene(timeNow) {
+      const isPortrait = height > width * 1.1;
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
       skyGrad.addColorStop(0, '#151426');
       skyGrad.addColorStop(0.45, '#3b2f4c');
@@ -1661,12 +1824,12 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, width, height);
 
-      const cityY = height * 0.82;
+      const cityY = isPortrait ? height * 0.84 : height * 0.82;
 
-      const bbW = Math.min(width * 0.44, 460);
+      const bbW = isPortrait ? Math.min(width * 0.84, 380) : Math.min(width * 0.44, 460);
       const bbH = bbW * 0.56;
-      const bbX = width * 0.52 - bbW / 2;
-      const bbY = height * 0.24;
+      const bbX = isPortrait ? (width * 0.50 - bbW / 2) : (width * 0.52 - bbW / 2);
+      const bbY = isPortrait ? height * 0.17 : height * 0.24;
 
       ctx.save();
       const leg1X = bbX + bbW * 0.18;
@@ -1818,6 +1981,7 @@
        8. SCENE 3: FORGOTTEN PLATFORM BENCH & ILLUMINATED AD DISPLAY AT 4:44 AM
        ========================================================================== */
     function drawPlatformScene(timeNow) {
+      const isPortrait = height > width * 1.1;
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
       skyGrad.addColorStop(0, '#121420');
       skyGrad.addColorStop(0.5, '#22293d');
@@ -1826,7 +1990,7 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, width, height);
 
-      const platY = height * 0.65;
+      const platY = isPortrait ? height * 0.58 : height * 0.65;
       ctx.fillStyle = '#1e212b';
       ctx.fillRect(0, platY, width, height - platY);
 
@@ -1845,15 +2009,28 @@
       }
       ctx.restore();
 
-      const benchX = width * 0.48;
-      const benchY = platY + 55;
-      const benchW = 140;
+      let benchX, benchY, benchW, bbW, bbH, bbX, bbBottomY, bbY;
+      if (isPortrait) {
+        bbW = Math.min(width * 0.82, 340);
+        bbH = bbW * 0.58;
+        bbX = width * 0.5 - bbW / 2;
+        bbBottomY = platY - 14;
+        bbY = bbBottomY - bbH;
 
-      const bbW = Math.min(width * 0.28, 280);
-      const bbH = bbW * 0.64;
-      const bbX = benchX - benchW / 2 - bbW - 35;
-      const bbBottomY = platY + 35;
-      const bbY = bbBottomY - bbH;
+        benchW = Math.min(width * 0.52, 160);
+        benchX = width * 0.40;
+        benchY = platY + 50;
+      } else {
+        benchX = width * 0.48;
+        benchY = platY + 55;
+        benchW = 140;
+
+        bbW = Math.min(width * 0.28, 280);
+        bbH = bbW * 0.64;
+        bbX = benchX - benchW / 2 - bbW - 35;
+        bbBottomY = platY + 35;
+        bbY = bbBottomY - bbH;
+      }
 
       ctx.save();
       ctx.strokeStyle = '#0f1118';
@@ -2031,20 +2208,24 @@
     }
 
     function drawTheaterScene(timeNow) {
+      const isPortrait = height > width * 1.1;
       ctx.fillStyle = '#07080d';
       ctx.fillRect(0, 0, width, height);
 
-      const scrW = Math.min(width * 0.68, 800);
-      const scrH = scrW * 0.52;
+      const scrW = isPortrait ? Math.min(width * 0.88, 420) : Math.min(width * 0.68, 800);
+      const scrH = scrW * 0.54;
       const scrX = width * 0.5 - scrW / 2;
-      const scrY = height * 0.35 - scrH * 0.5;
+      const scrY = isPortrait ? height * 0.15 : (height * 0.35 - scrH * 0.5);
 
-      const stageY = scrY + scrH + 12;
-      const stageH = 14;
+      const stageY = scrY + scrH + (isPortrait ? 8 : 12);
+      const stageH = isPortrait ? 10 : 14;
       const floorY = stageY + stageH;
 
       function getWallLeftX(y) {
         const t = Math.max(0, Math.min(1, (y - floorY) / Math.max(1, height - floorY)));
+        if (isPortrait) {
+          return width * 0.09 * (1 - t) + width * 0.03 * t;
+        }
         return width * 0.17 * (1 - t) + width * 0.07 * t;
       }
       function getWallRightX(y) {
@@ -2142,7 +2323,12 @@
       });
 
       const bounceColor = '112, 193, 179';
-      const seatRowConfigs = [
+      const seatRowConfigs = isPortrait ? [
+        { y: floorY + (height - floorY) * 0.20, scale: 0.60, count: 5, bounceAlpha: 0.25, hasDrink: false },
+        { y: floorY + (height - floorY) * 0.42, scale: 0.78, count: 4, bounceAlpha: 0.40, hasDrink: false },
+        { y: floorY + (height - floorY) * 0.66, scale: 1.02, count: 4, bounceAlpha: 0.58, hasDrink: false },
+        { y: floorY + (height - floorY) * 0.88, scale: 1.30, count: 3, bounceAlpha: 0.75, hasDrink: true }
+      ] : [
         { y: floorY + 14, scale: 0.52, count: 11, bounceAlpha: 0.22, hasDrink: false },
         { y: floorY + 54, scale: 0.70, count: 9, bounceAlpha: 0.35, hasDrink: false },
         { y: floorY + 104, scale: 0.94, count: 8, bounceAlpha: 0.52, hasDrink: false },
@@ -2401,8 +2587,9 @@
        (유저 제공 이미지: 깊은 안개 속 도로, 고독한 인물, 눈 내리는 숲, 거대 전광판)
        ========================================================================== */
     function drawSnowRoadScene(timeNow) {
+      const isPortrait = height > width * 1.1;
       const vx = width * 0.5;
-      const vy = height * 0.45;
+      const vy = isPortrait ? height * 0.40 : height * 0.45;
 
       // 1. Deep Midnight Blue Atmospheric Fog & Horizon
       const skyGrad = ctx.createRadialGradient(vx, vy, 10, vx, vy, Math.max(width, height) * 0.85);
@@ -2429,10 +2616,10 @@
       ctx.restore();
 
       // 2. Asphalt Road with Gentle Curve Vanishing into Deep Mist
-      const roadLeftBottom = width * 0.28;
-      const roadRightBottom = width * 0.72;
-      const roadLeftTop = vx - 14;
-      const roadRightTop = vx + 14;
+      const roadLeftBottom = isPortrait ? width * 0.10 : width * 0.28;
+      const roadRightBottom = isPortrait ? width * 0.90 : width * 0.72;
+      const roadLeftTop = vx - (isPortrait ? 8 : 14);
+      const roadRightTop = vx + (isPortrait ? 8 : 14);
 
       ctx.save();
       const roadGrad = ctx.createLinearGradient(0, vy, 0, height);
@@ -2564,10 +2751,18 @@
 
       // 4. SURREAL ROADSIDE BILLBOARD (눈 덮인 겨울 숲속 거대 전광판)
       ctx.save();
-      const bbW = Math.min(width * 0.26, 280);
-      const bbH = bbW * 0.58;
-      const bbX = width * 0.70;
-      const bbY = height * 0.26;
+      let bbW, bbH, bbX, bbY;
+      if (isPortrait) {
+        bbW = Math.min(width * 0.46, 210);
+        bbH = bbW * 0.58;
+        bbX = width * 0.52;
+        bbY = height * 0.21;
+      } else {
+        bbW = Math.min(width * 0.26, 280);
+        bbH = bbW * 0.58;
+        bbX = width * 0.70;
+        bbY = height * 0.26;
+      }
 
       // Heavy industrial support mast in snow
       ctx.fillStyle = '#070b12';
@@ -2604,8 +2799,8 @@
 
       // 5. SOLITARY SILHOUETTE FIGURE (중앙 안개 속 고독한 인물 - 원본 이미지 완벽 재현)
       ctx.save();
-      const figX = vx + 6;
-      const figY = vy + 28;
+      const figX = vx + (isPortrait ? 2 : 6);
+      const figY = vy + (isPortrait ? 22 : 28);
       const figH = 46;
 
       // Soft rim glow behind the figure
@@ -2661,7 +2856,7 @@
 
       // Spaced characters across the midground
       const word = "d r e a m s c a p e";
-      ctx.fillText(word, width * 0.5, height * 0.50);
+      ctx.fillText(word, width * 0.5, isPortrait ? height * 0.46 : height * 0.50);
       ctx.restore();
     }
 
@@ -2835,6 +3030,44 @@
     btnTogglePlaylist.addEventListener('click', () => playlistDrawer.classList.toggle('open'));
     btnClosePlaylist.addEventListener('click', () => playlistDrawer.classList.remove('open'));
 
+    function togglePhoneMode() {
+      state.phoneMode = !state.phoneMode;
+      document.body.classList.toggle('phone-mode-active', state.phoneMode);
+      const btnPhone = document.getElementById('btnPhoneMode');
+      if (btnPhone) btnPhone.classList.toggle('active', state.phoneMode);
+      resizeCanvas();
+      showToast(state.phoneMode ? '📱 폰 모드 켜짐 (9:16 스마트폰 세로 뷰)' : '🖥️ 와이드 데스크톱 모드 복귀');
+    }
+
+    const btnPhoneMode = document.getElementById('btnPhoneMode');
+    if (btnPhoneMode) {
+      btnPhoneMode.addEventListener('click', togglePhoneMode);
+    }
+
+    // Touch Tap to toggle Zen Mode on mobile
+    let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      if (melancholicDeck && melancholicDeck.ctx && melancholicDeck.ctx.state === 'suspended') {
+        melancholicDeck.ctx.resume();
+      }
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length === 1 && Date.now() - touchStartTime < 350) {
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        if (dx < 12 && dy < 12) {
+          // Tap on empty stage toggles Zen Mode
+          toggleZenMode();
+        }
+      }
+    }, { passive: true });
+
     function toggleZenMode() {
       state.zenMode = !state.zenMode;
       document.body.classList.toggle('zen-mode', state.zenMode);
@@ -2871,6 +3104,8 @@
         switchScene('snowRoad');
       } else if (e.key === 'p' || e.key === 'P') {
         playlistDrawer.classList.toggle('open');
+      } else if (e.key === 'm' || e.key === 'M') {
+        togglePhoneMode();
       } else if (e.key === 'h' || e.key === 'H') {
         toggleZenMode();
       } else if (e.key === 'f' || e.key === 'F') {
@@ -2879,6 +3114,9 @@
     });
 
     // Check URL Hash on launch
+    if (window.location.hash === '#phone' || window.location.hash === '#mobile') {
+      togglePhoneMode();
+    }
     if (window.location.hash === '#cinema' || window.location.hash === '#theater') {
       switchScene('theater');
     } else if (window.location.hash === '#snow' || window.location.hash === '#snowroad' || window.location.hash === '#dreamscape') {
